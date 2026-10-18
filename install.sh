@@ -16,6 +16,7 @@
 #   sh install.sh --prefix DIR    # install under DIR (testing)
 #   sh install.sh --no-system     # do not touch the EmulationStation config
 #   sh install.sh --es-cfg PATH   # use a specific es_systems.cfg
+#   sh install.sh --themes DIR    # EmulationStation themes directory
 #   sh install.sh --force         # re-download and overwrite existing files
 #
 # Environment overrides (mainly for development):
@@ -36,6 +37,7 @@ REL="${PROJECT_AI_REL_BASE:-https://github.com/${OWNER}/${REPO}/releases/latest/
 
 PREFIX="/roms2"
 ES_CFG="/etc/emulationstation/es_systems.cfg"
+THEMES=""
 DRY_RUN=0
 DO_SYSTEM=1
 FORCE=0
@@ -46,6 +48,8 @@ while [ $# -gt 0 ]; do
         --prefix=*)  PREFIX="${1#*=}"; shift ;;
         --es-cfg)    ES_CFG="$2"; shift 2 ;;
         --es-cfg=*)  ES_CFG="${1#*=}"; shift ;;
+        --themes)    THEMES="$2"; shift 2 ;;
+        --themes=*)  THEMES="${1#*=}"; shift ;;
         --dry-run)   DRY_RUN=1; shift ;;
         --no-system) DO_SYSTEM=0; shift ;;
         --force)     FORCE=1; shift ;;
@@ -61,6 +65,17 @@ MODELS_DIR="${ROOT}/models"
 LICENSE_DIR="${ROOT}/licenses"
 SYSDIR="${PREFIX}/227ai"
 
+detect_themes() {
+    [ -n "$THEMES" ] && { echo "$THEMES"; return; }
+    resolved="$(readlink -f /etc/emulationstation/themes 2>/dev/null)"
+    for candidate in "$resolved" /roms/themes "${PREFIX}/themes"; do
+        [ -n "$candidate" ] && [ -d "$candidate" ] && { echo "$candidate"; return; }
+    done
+    echo "/roms/themes"
+}
+
+THEMES="$(detect_themes)"
+
 RUNTIME_ASSET="project-ai-r36s-runtime-arm64.tar.gz"
 LAUNCHER_NAME="227 AI.sh"
 
@@ -73,7 +88,7 @@ WHISPER_SHA="c77c5766f1cef09b6b7d47f21b546cbddd4157886b3b5d6d4f709e91e66c7c2b"
 WHISPER_HF="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/${WHISPER_FILE}"
 
 APP_FILES="project_ai_r36s.py project_ai_settings.py"
-ASSET_FILES="logo.rgba intro-frames.zip intro-background.rgba words.txt 227-art.jpg"
+ASSET_FILES="logo.rgba intro-frames.zip intro-background.rgba words.txt 227-art.jpg 227-poster.png 227-theme.xml"
 LICENSE_FILES="llama.cpp-MIT.txt whisper.cpp-MIT.txt LFM2.5-Open-License.txt DejaVu-fonts-copyright espeak-ng-NOTICE.txt"
 
 info() { printf '  %s\n' "$*"; }
@@ -296,6 +311,41 @@ install_system() {
     chmod 755 "$SYSDIR/${LAUNCHER_NAME}" 2>/dev/null || true
 }
 
+# Give the 227 system a name and artwork in every installed EmulationStation
+# theme. The name comes from a per-system theme.xml folder; the photo comes
+# from a poster image (themes that read _art/posters/${system.theme}).
+install_theme() {
+    [ "$DO_SYSTEM" -eq 1 ] || return 0
+    echo "Adding 227 artwork to EmulationStation themes..."
+    if [ ! -d "$THEMES" ]; then
+        warn "no themes directory at $THEMES (skipping system artwork)"
+        return 0
+    fi
+    if [ "$DRY_RUN" -eq 1 ]; then
+        info "would add 227 name + poster to themes in $THEMES"
+        return 0
+    fi
+
+    template="$ROOT/227-theme.xml"
+    poster="$ROOT/227-poster.png"
+    count=0
+    for theme in "$THEMES"/*/; do
+        [ -f "${theme}theme.xml" ] || continue
+        fmt="$(grep -o 'formatVersion>[0-9]*' "${theme}theme.xml" 2>/dev/null | head -n1 | grep -o '[0-9]*')"
+        [ -n "$fmt" ] || fmt=7
+        mkdir -p "${theme}227"
+        if [ -f "$template" ]; then
+            sed "s|<formatVersion>[0-9]*</formatVersion>|<formatVersion>${fmt}</formatVersion>|" \
+                "$template" > "${theme}227/theme.xml"
+        fi
+        if [ -d "${theme}_art/posters" ] && [ -f "$poster" ]; then
+            cp -f "$poster" "${theme}_art/posters/227.png"
+        fi
+        count=$((count + 1))
+    done
+    info "added 227 name + artwork to $count theme(s)"
+}
+
 write_config() {
     if [ -f "$ROOT/config.json" ] && [ "$FORCE" -eq 0 ]; then
         info "keeping your existing settings"
@@ -406,6 +456,7 @@ main() {
     install_models
     install_code
     install_system
+    install_theme
     write_config
     patch_es
     summary
