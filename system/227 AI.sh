@@ -1,5 +1,5 @@
 #!/bin/sh
-# 227 AI launcher for the R36S (dArkOSRE). Installed by install.sh.
+# 227 AI launcher for the R36S (dArkOSRE). Installed by install227ai.sh.
 # It finds its own folder, so it works whether games live on the main SD
 # card (/roms) or on the second one (/roms2).
 export SDL_VIDEODRIVER=kmsdrm

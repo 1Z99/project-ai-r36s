@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Extracted from docs/index.html; production computed styles. Copyright (c) 2026 1Z99, MIT. -->
+<svg viewBox="0 0 360 470" role="img" aria-label="Original R36S illustration by 1Z99; screen reserved for the 227 AI PC walkthrough" xmlns="http://www.w3.org/2000/svg" width="360" height="470"><style>
+  svg { display: block; width: 360px; height: 470px; max-height: none; padding: 0; -webkit-font-smoothing: antialiased; }
+  .device-outline {
+    fill: rgb(13, 21, 17);
+    stroke: rgb(87, 135, 105);
+    stroke-width: 1.5px;
+    stroke-linecap: butt;
+    stroke-linejoin: miter;
+    fill-opacity: 1;
+    stroke-opacity: 1;
+    opacity: 1;
+    font-family: "227 Field Sans", Arial, Helvetica, sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    text-anchor: start;
+    letter-spacing: normal;
+  }
+  .device-detail {
+    fill: none;
+    stroke: rgb(87, 135, 105);
+    stroke-width: 1.2px;
+    stroke-linecap: butt;
+    stroke-linejoin: miter;
+    fill-opacity: 1;
+    stroke-opacity: 1;
+    opacity: 1;
+    font-family: "227 Field Sans", Arial, Helvetica, sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    text-anchor: start;
+    letter-spacing: normal;
+  }
+  .device-bezel {
+    fill: rgb(8, 13, 11);
+    stroke: rgb(48, 72, 58);
+    stroke-width: 1px;
+    stroke-linecap: butt;
+    stroke-linejoin: miter;
+    fill-opacity: 1;
+    stroke-opacity: 1;
+    opacity: 1;
+    font-family: "227 Field Sans", Arial, Helvetica, sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    text-anchor: start;
+    letter-spacing: normal;
+  }
+  .device-screen {
+    fill: rgb(17, 30, 23);
+    stroke: rgb(87, 135, 105);
+    stroke-width: 1px;
+    stroke-linecap: butt;
+    stroke-linejoin: miter;
+    fill-opacity: 1;
+    stroke-opacity: 1;
+    opacity: 1;
+    font-family: "227 Field Sans", Arial, Helvetica, sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    text-anchor: start;
+    letter-spacing: normal;
+  }
+  .device-button {
+    fill: rgb(8, 13, 11);
+    stroke: rgb(87, 135, 105);
+    stroke-width: 1px;
+    stroke-linecap: butt;
+    stroke-linejoin: miter;
+    fill-opacity: 1;
+    stroke-opacity: 1;
+    opacity: 1;
+    font-family: "227 Field Sans", Arial, Helvetica, sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    text-anchor: start;
+    letter-spacing: normal;
+  }
+  .button-letter {
+    fill: rgb(154, 175, 161);
+    stroke: none;
+    stroke-width: 1px;
+    stroke-linecap: butt;
+    stroke-linejoin: miter;
+    fill-opacity: 1;
+    stroke-opacity: 1;
+    opacity: 1;
+    font-family: "DejaVu Sans Mono", SFMono-Regular, Consolas, "Liberation Mono", monospace;
+    font-size: 9px;
+    font-weight: 400;
+    text-anchor: middle;
+    letter-spacing: normal;
+  }
+  .device-stick {
+    fill: rgb(8, 13, 11);
+    stroke: rgb(87, 135, 105);
+    stroke-width: 1px;
+    stroke-linecap: butt;
+    stroke-linejoin: miter;
+    fill-opacity: 1;
+    stroke-opacity: 1;
+    opacity: 1;
+    font-family: "227 Field Sans", Arial, Helvetica, sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    text-anchor: start;
+    letter-spacing: normal;
+  }
+  .device-signature {
+    fill: rgb(154, 175, 161);
+    stroke: none;
+    stroke-width: 1px;
+    stroke-linecap: butt;
+    stroke-linejoin: miter;
+    fill-opacity: 1;
+    stroke-opacity: 1;
+    opacity: 1;
+    font-family: "DejaVu Sans Mono", SFMono-Regular, Consolas, "Liberation Mono", monospace;
+    font-size: 6px;
+    font-weight: 400;
+    text-anchor: middle;
+    letter-spacing: 1px;
+  }
+</style><rect width="360" height="470" fill="#080d0b"></rect>
+            <rect class="device-outline" x="39" y="12" width="282" height="438" rx="28"></rect>
+            <path class="device-detail" d="M63 28h234M63 434h234"></path>
+            <rect class="device-bezel" x="58" y="42" width="244" height="193" rx="10"></rect>
+            <rect class="device-screen" x="72" y="56" width="216" height="162"></rect>
+
+
+            <path class="device-button" d="M91 265h23v22h23v23h-23v23H91v-23H68v-23h23z"></path>
+            <circle class="device-button" cx="251" cy="280" r="13"></circle><circle class="device-button" cx="278" cy="306" r="13"></circle>
+            <circle class="device-button" cx="225" cy="306" r="13"></circle><circle class="device-button" cx="251" cy="332" r="13"></circle>
+            <text class="button-letter" x="251" y="284">X</text><text class="button-letter" x="278" y="310">A</text><text class="button-letter" x="225" y="310">Y</text><text class="button-letter" x="251" y="336">B</text>
+            <circle class="device-stick" cx="115" cy="375" r="26"></circle><circle class="device-detail" cx="115" cy="375" r="18"></circle>
+            <circle class="device-stick" cx="246" cy="375" r="26"></circle><circle class="device-detail" cx="246" cy="375" r="18"></circle>
+            <rect class="device-button" x="158" y="315" width="17" height="6" rx="3"></rect><rect class="device-button" x="187" y="315" width="17" height="6" rx="3"></rect>
+            <path class="device-detail" d="M169 365v27m10-27v27m10-27v27m10-27v27"></path>
+            <text class="device-signature" x="180" y="425">R36S / 227 PROJECT</text>
+          </svg>

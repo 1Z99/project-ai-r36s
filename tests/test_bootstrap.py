@@ -32,7 +32,7 @@ class BootstrapTest(unittest.TestCase):
         dialog.chmod(0o755)
         self.env['PATH'] = str(self.bin) + os.pathsep + self.env['PATH']
         self.script = self.base / 'install.sh'
-        shutil.copy2(REPO / 'install.sh', self.script)
+        shutil.copy2(REPO / 'install227ai.sh', self.script)
 
     def run_sh(self, *args, script=None):
         return subprocess.run(['sh', str(script or self.script), *map(str, args)],
@@ -69,6 +69,39 @@ class BootstrapTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('--cli', result.stdout)
         self.assertEqual(self.snapshot(), before)
+
+    def test_old_entry_forwards_arguments_to_canonical_installer(self):
+        legacy = self.base / 'legacy.sh'
+        shutil.copy2(REPO / 'install.sh', legacy)
+        (self.base / 'install227ai.sh').write_text('#!/bin/sh\nexec python3 -c "import json,sys; print(json.dumps(sys.argv[1:]))" "$@"\n')
+        result = self.run_sh('--source', 'path with spaces', '--desktop', script=legacy)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout), ['--source', 'path with spaces', '--desktop'])
+
+    def test_old_download_entry_fetches_new_name_and_preserves_arguments(self):
+        legacy = self.base / 'legacy.sh'
+        shutil.copy2(REPO / 'install.sh', legacy)
+        curl = self.bin / 'curl'
+        curl.write_text('''#!/bin/sh
+while [ "$#" -gt 0 ]; do
+  if [ "$1" = "-o" ]; then OUT=$2; shift 2; else URL=$1; shift; fi
+done
+case "$URL" in */main/install227ai.sh) ;; *) exit 99 ;; esac
+printf '%s\\n' '#!/bin/sh' 'exec python3 -c "import json,sys; print(json.dumps(sys.argv[1:]))" "$@"' > "$OUT"
+''')
+        curl.chmod(0o755)
+        result = self.run_sh('--source', 'path with spaces', '--desktop', script=legacy)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout), ['--source', 'path with spaces', '--desktop'])
+
+    def test_old_download_entry_stops_on_transfer_failure(self):
+        legacy = self.base / 'legacy.sh'
+        shutil.copy2(REPO / 'install.sh', legacy)
+        curl = self.bin / 'curl'
+        curl.write_text('#!/bin/sh\nexit 22\n')
+        curl.chmod(0o755)
+        result = self.run_sh('--help', script=legacy)
+        self.assertEqual(result.returncode, 22)
 
     def test_dry_run_core_only_no_writes_or_ui(self):
         for layout in ('root', 'repo'):
@@ -152,7 +185,7 @@ class BootstrapTest(unittest.TestCase):
         mounts.write_text(''.join('/dev/test {} ext4 rw 0 0\n'.format(card)
                                   for card in (first, second)) if mounted else '')
         # Redirect fixed production mountpoints and /proc/mounts into the fixture.
-        text = (REPO / 'install.sh').read_text().replace('/roms2', str(second)).replace('/roms', str(first))
+        text = (REPO / 'install227ai.sh').read_text().replace('/roms2', str(second)).replace('/roms', str(first))
         text = text.replace('/proc/mounts', str(mounts))
         script = first / 'tools/install.sh'
         script.write_text(text)

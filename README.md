@@ -1,6 +1,6 @@
 # 227 AI — offline AI for the R36S
 
-**227 AI** turns the Anbernic **R36S** handheld into a private, fully offline
+**227 AI** turns the **R36S** handheld into a private, fully offline
 AI assistant. It runs a small language model **entirely on the device** — no
 internet, no cloud, no accounts. Ask questions with the on-screen keyboard,
 dictate with a USB microphone, and hear the replies read aloud.
@@ -9,15 +9,17 @@ This repository contains the app, artwork, licenses and a **graphical deployment
 manager** for installing, updating and removing 227 AI. The app gets a **227**
 system page in EmulationStation so you launch it like a game.
 
-```
-   ┌─────────────── 227 ───────────────┐
-   │  LFM 2.5 // 350M            [READY]│
-   │                                    │
-   │  > ask 227 anything                │
-   │                                    │
-   │  A TYPE/SPEAK  X HISTORY  Y NEW …  │
-   └────────────────────────────────────┘
-```
+[![Animated R36S illustration showing the 227 AI desktop walkthrough](assets/readme/227-ai-demo.gif)](https://github.com/1Z99/project-ai-r36s/releases/download/v1.0.0/227-ai-demo.mp4)
+
+**[Download the installer: install227ai.sh](https://github.com/1Z99/project-ai-r36s/releases/download/v1.0.0/install227ai.sh)**
+ · **[Full walkthrough with sound](https://github.com/1Z99/project-ai-r36s/releases/download/v1.0.0/227-ai-demo.mp4)**
+
+The animation uses the same R36S artwork and native UI demo as the local project
+site: opening animation, typing, replies, read-aloud, microphone test, dictation
+and history. Replies and microphone input are scripted PC demonstrations, not a
+live model or a device recording. Click it for the full video with offline-generated
+speech. GitHub READMEs cannot run the site's interactive video player; the GIF is
+a silent preview.
 
 ---
 
@@ -39,13 +41,14 @@ system page in EmulationStation so you launch it like a game.
 - **Dictate into the system prompt** — the system-prompt keyboard has its own
   **MIC** key, so the prompt can be written by voice too.
 - **Chat history** — keep and reopen recent conversations.
-- **No network access at runtime** — the network is only used by the installer.
+- **No cloud dependency at runtime** — the app talks only to its local inference
+  server at `127.0.0.1:39227`; internet access is needed for installation downloads.
 
 ---
 
 ## Requirements
 
-- An **Anbernic R36S** running **dArkOSRE** (aarch64), or a compatible
+- An **R36S** running **dArkOSRE** (aarch64), or a compatible
   aarch64 ArkOS-style image with EmulationStation.
 - A writable, actually mounted **main SD card** (`/roms`) or **second SD card**
   (`/roms2`). Both are detected independently of EmulationStation's ROM layout;
@@ -66,9 +69,9 @@ system page in EmulationStation so you launch it like a game.
 
 ## Install
 
-1. Connect the handheld to Wi-Fi and copy `install.sh` into a mounted card's
+1. Download **[install227ai.sh from the release](https://github.com/1Z99/project-ai-r36s/releases/download/v1.0.0/install227ai.sh)**. Connect the handheld to Wi-Fi and copy it into a mounted card's
    `tools/` folder. Mark it executable if launching it directly from Tools.
-2. Run it from Tools, or run `sh install.sh` over SSH. The UI appears on the
+2. Run it from Tools, or run `sh install227ai.sh` over SSH. The UI appears on the
    handheld, not in the SSH terminal. It needs no terminal input.
 3. Select **Main SD / SD1** or **Second SD / SD2** with D-Pad and **A**. Select
    **INSTALL**, then explicitly confirm. Unmounted/read-only cards are unavailable.
@@ -77,12 +80,25 @@ system page in EmulationStation so you launch it like a game.
 To download the bootstrap over SSH, use the Tools directory on your mounted card:
 
 ```sh
-cd /roms2/tools                 # or /roms/tools
-curl -fL --connect-timeout 15 --max-time 120 -o install.sh \
-  https://raw.githubusercontent.com/1Z99/project-ai-r36s/main/install.sh
-chmod +x install.sh
-sh install.sh
+cd /roms2/tools && \
+curl -fL --connect-timeout 15 --max-time 120 -o install227ai.sh.download \
+  https://github.com/1Z99/project-ai-r36s/releases/download/v1.0.0/install227ai.sh && \
+mv install227ai.sh.download install227ai.sh && less install227ai.sh
 ```
+
+Use `/roms/tools` instead for the main card. Stop if a command fails. After a
+successful download, inspect the script, quit the viewer, then run:
+
+```sh
+sh /roms2/tools/install227ai.sh
+```
+
+Use `/roms/tools/install227ai.sh` if you chose the main card. The bootstrap still
+fetches current application source from `main`; the `v1.0.0` asset page hosts the
+runtime and installer downloads, not a frozen copy of the current app. Existing
+`install.sh` links remain as a compatibility entry; use `install227ai.sh` for new
+downloads. The retained manager bootstrap is still named `install.sh` internally
+so installed Tools launchers keep working.
 
 The small bootstrap fetches the manager's Python UI, core and CLI modules into
 `<card>/tools/227-ai-manager/`, validates them in temporary files, then publishes
@@ -122,11 +138,11 @@ CLI mode is explicit; graphical mode does not accept `--roms` or action flags.
 Every CLI change requires both an explicit card and `--yes`:
 
 ```sh
-sh install.sh --help            # no SDL, network or writes
-sh install.sh --cli --roms /roms2 --action install --yes
-sh install.sh --cli --roms /roms2 --action update --yes
-sh install.sh --cli --roms /roms2 --action uninstall --yes
-sh install.sh --cli --roms /roms2 --action install --dry-run
+sh install227ai.sh --help            # no SDL, network or writes
+sh install227ai.sh --cli --roms /roms2 --action install --yes
+sh install227ai.sh --cli --roms /roms2 --action update --yes
+sh install227ai.sh --cli --roms /roms2 --action uninstall --yes
+sh install227ai.sh --cli --roms /roms2 --action install --dry-run
 ```
 
 Dry-run discovers both cards and validates the selected target without creating
@@ -138,13 +154,13 @@ test downloads or estimate required staging space. CLI-only `--es-cfg PATH` and
 
 ### Local builds
 
-From a checkout, `sh install.sh` uses `installer/` without downloading manager
+From a checkout, `sh install227ai.sh` uses `installer/` without downloading manager
 modules and automatically passes the checkout root as `--source` when `app/`
 exists. This tests **unpushed app/assets/system changes**, not the published
-copies. Use `sh install.sh --desktop` for a PC window, or `--source PATH` to
+copies. Use `sh install227ai.sh --desktop` for a PC window, or `--source PATH` to
 select another release tree. Local logs live in `installer/`.
 
-A self-contained manager build can place `install.sh` and the three Python
+A self-contained manager build can place `install227ai.sh` and the three Python
 modules together, with a release tree at `bundle/` beside them. The UI and CLI
 automatically use `bundle/` when present. Include app, assets, licenses and system
 folders; put the runtime archive plus its pinned `.sha256` sidecar and both model
@@ -164,7 +180,7 @@ For an isolated headless source test, create the target and an ES config first:
 ```sh
 mkdir -p /tmp/227-test/card /tmp/227-test/themes
 printf '<systemList></systemList>\n' > /tmp/227-test/es_systems.cfg
-sh install.sh --cli --roms /tmp/227-test/card --action install --dry-run \
+sh install227ai.sh --cli --roms /tmp/227-test/card --action install --dry-run \
   --es-cfg /tmp/227-test/es_systems.cfg --themes /tmp/227-test/themes
 # Replace --dry-run with --yes to actually install the local source build.
 ```
@@ -279,7 +295,7 @@ chat history and cache. Back up `chats.json` / `history.json` first if needed.**
 For headless removal:
 
 ```sh
-sh install.sh --cli --roms /roms2 --action uninstall --yes
+sh install227ai.sh --cli --roms /roms2 --action uninstall --yes
 ```
 
 Only the selected card's ES registration is removed; unrelated systems and a
@@ -292,7 +308,8 @@ Restart EmulationStation after installation or removal to refresh its systems.
 ## Repository layout
 
 ```
-install.sh                              graphical / CLI bootstrap
+install227ai.sh                          graphical / CLI bootstrap
+install.sh                               compatibility entry for existing links
 installer/installer_ui.py                SDL deployment manager
 installer/installer_core.py              shared install / update / uninstall backend
 installer/installer_cli.py               explicit headless frontend
@@ -303,6 +320,25 @@ system/227 AI.sh, system/gamelist.xml   EmulationStation system files
 licenses/                               third-party license texts
 dev/                                    optional PC preview + build tools
 ```
+
+`.gitignore` belongs in this repository: it excludes generated Python files, logs
+and large release binaries from source commits. `PUBLISHING.md` is optional
+maintainer documentation for updating release assets; users do not need it to
+install or run 227 AI.
+
+## Tested Device
+
+The recorded October 18, 2026 hardware run used an **R36S with Panel 4**
+(owner-identified), dArkOSRE build **`03082026`**, Linux **`4.4.189`**, aarch64,
+Python **`3.13.5`**, and a 640 x 480 display. Fresh installation, real model/runtime
+downloads and checksum checks, update preserving settings/chats, and uninstall
+retaining the manager passed on the main-SD exFAT layout (`/roms`).
+
+The manager at tested source revision `c83568c` is **1.2.0**; the binary asset
+release is **v1.0.0**. Those are separate versions. The **85 automated tests** at
+that app revision cover deployment and manager behavior, not model accuracy or
+performance. A fresh two-card manager installation and other hardware/firmware
+variants are not certified by that single-device run.
 
 `dev/project_ai_preview.py` renders the interface on a desktop computer for
 development (`dev/prepare_intro_frames.py` rebuilds the intro asset).
