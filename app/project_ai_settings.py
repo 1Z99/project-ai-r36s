@@ -1,6 +1,12 @@
 """Shared settings UI; persistence and engine changes belong to its host app."""
 
+import array
+import math
+import signal
+import subprocess
 import time
+import wave
+from pathlib import Path
 
 import project_ai_r36s as app
 
@@ -12,8 +18,10 @@ PROMPT_RECT = (DETAIL_X, 149, DETAIL_W, 224)
 PROMPT_APPLY = (DETAIL_X, 383, 112, 28)
 PROMPT_RESET = (DETAIL_X + 124, 383, 112, 28)
 EDITOR_RECT = (app.CONTENT_X, 114, app.CONTENT_W, 120)
-PROMPT_ACTIONS = ["SPACE", "DEL", "ALL", "APPLY", "CANCEL"]
+PROMPT_ACTIONS = ["MIC", "SPACE", "DEL", "ALL", "APPLY", "CANCEL"]
 PROMPT_KEYS = app.KEYBOARD[:-1] + [PROMPT_ACTIONS]
+MIC_TEST_PATH = Path("/tmp/project_227_mictest.wav")
+MIC_TEST_SECONDS = 4.0
 OPTIONS = {
     "context": (512, 768, 1024),
     "max_tokens": (64, 96, 128, 160, 192, 256),
@@ -26,27 +34,192 @@ OPTIONS = {
 PAGE_ROWS = {
     2: (("context", "CONTEXT WINDOW"), ("max_tokens", "REPLY LIMIT"),
         ("temperature", "TEMPERATURE")),
-    3: (("highlight", "WORD HIGHLIGHT"), ("speech_rate", "READING SPEED")),
+    3: (("highlight", "WORD HIGHLIGHT"), ("speech_rate", "READING SPEED"),
+        ("audio_device", "MIC / SPEAKER"), ("audio_test", "TEST MICROPHONE")),
     4: (("background", "BACKGROUND OPACITY"), ("intro", "OPENING ANIMATION")),
 }
+AUDIO_AUTO = "auto"
 
 
 def contains(rect, x, y):
     return rect[0] <= x < rect[0] + rect[2] and rect[1] <= y < rect[1] + rect[3]
 
 
+def analyze_wav(path):
+    """Peak / RMS / zero-crossings-per-second, so a mic test can be judged quickly."""
+    stats = {"peak": 0, "rms": 0.0, "cross": 0.0, "dur": 0.0}
+    try:
+        with wave.open(str(path), "rb") as handle:
+            if handle.getsampwidth() != 2:
+                return stats
+            rate = handle.getframerate() or 16000
+            frames = handle.readframes(min(handle.getnframes(), rate * 30))
+    except (OSError, wave.Error, MemoryError):
+        return stats
+    if len(frames) < 4:
+        return stats
+    samples = array.array("h")
+    samples.frombytes(frames[: len(frames) - (len(frames) % 2)])
+    if not samples:
+        return stats
+    stats["peak"] = max(abs(sample) for sample in samples)
+    stats["rms"] = math.sqrt(sum(float(sample) * sample for sample in samples) / len(samples))
+    duration = len(samples) / rate if rate else 0.0
+    stats["dur"] = duration
+    crossings = 0
+    sign = 1 if samples[0] >= 0 else -1
+    for value in samples[1:]:
+        current = 1 if value >= 0 else -1
+        if current != sign:
+            crossings += 1
+            sign = current
+    stats["cross"] = crossings / duration if duration else 0.0
+    return stats
+
+
+def verdict(stats):
+    if stats["peak"] < 50:
+        return "SILENT"
+    if stats["cross"] < 10:
+        return "NO SIGNAL / MUTE"
+    if stats["peak"] < 400:
+        return "TOO QUIET"
+    if stats["cross"] < 150:
+        return "RUMBLE, NO SPEECH"
+    return "SPEECH OK"
+
+
+class MicTester:
+    """Record a few seconds from one device, play it back, and grade the capture."""
+
+    def __init__(self):
+        self.state = "idle"        # idle | recording | playing | done
+        self.device = None
+        self.stats = None
+        self.progress = 0.0
+        self.error = ""
+        self._proc = None
+        self._started = 0.0
+        self._deadline = 0.0
+
+    def busy(self):
+        return self.state in ("recording", "playing")
+
+    def start(self, device):
+        if self.busy() or device is None:
+            return False
+        self.device = device
+        self.stats = None
+        self.progress = 0.0
+        self.error = ""
+        try:
+            MIC_TEST_PATH.unlink(missing_ok=True)
+        except OSError:
+            pass
+        try:
+            app.enable_capture_input(device)
+        except Exception:
+            pass
+        try:
+            self._proc = subprocess.Popen(
+                ["arecord", "-D", device["arg"], "-f", "S16_LE", "-r", "16000", "-c", "1",
+                 "-t", "wav", "-q", str(MIC_TEST_PATH)],
+                stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except OSError:
+            self.state = "done"
+            self.error = "MIC OPEN FAILED"
+            return False
+        self.state = "recording"
+        self._started = time.monotonic()
+        self._deadline = self._started + MIC_TEST_SECONDS
+        return True
+
+    def update(self):
+        now = time.monotonic()
+        if self.state == "recording":
+            if self._proc is not None and self._proc.poll() is not None:
+                self._stop_proc()
+                self.state = "done"
+                self.error = "NO AUDIO ON THIS DEVICE"
+                return
+            self.progress = min(1.0, (now - self._started) / MIC_TEST_SECONDS)
+            if now >= self._deadline:
+                self._stop_proc()
+                self.stats = analyze_wav(MIC_TEST_PATH)
+                self._playback()
+        elif self.state == "playing":
+            if now >= self._deadline:
+                self._stop_proc()
+                self.state = "done"
+
+    def _stop_proc(self):
+        proc, self._proc = self._proc, None
+        if proc is None or proc.poll() is not None:
+            return
+        proc.send_signal(signal.SIGINT)
+        try:
+            proc.wait(timeout=3)
+        except subprocess.TimeoutExpired:
+            proc.terminate()
+            try:
+                proc.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+
+    def _playback(self):
+        app.repair_wav_header(MIC_TEST_PATH)
+        if not self.stats or self.stats["peak"] < 50:
+            self.state = "done"
+            return
+        try:
+            self._proc = subprocess.Popen(
+                ["aplay", "-q", "-D", self.device["arg"], str(MIC_TEST_PATH)],
+                stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except OSError:
+            self.state = "done"
+            return
+        self.state = "playing"
+        self._deadline = time.monotonic() + max(1.0, self.stats["dur"]) + 0.4
+
+    def cancel(self):
+        if self.state == "idle":
+            return
+        self._stop_proc()
+        self.state = "idle"
+        self.progress = 0.0
+        self.error = ""
+        self.stats = None
+        self.device = None
+
+    def status(self):
+        if self.state == "recording":
+            return f"RECORDING {round(MIC_TEST_SECONDS - self.progress * MIC_TEST_SECONDS)}s ..."
+        if self.state == "playing":
+            return "PLAYING BACK ..."
+        if self.error:
+            return self.error
+        if self.state == "done" and self.stats:
+            return f"{verdict(self.stats)}  {self.stats['peak']}  {round(self.stats['cross'])}/s"
+        return "PRESS A TO RECORD"
+
+
 class SettingsPanel:
     def __init__(self, choices, on_model=None, on_background=None, config=None,
-                 on_change=None, preview=True):
+                 on_change=None, preview=True, audio_devices=None, on_mic=None):
         self.choices = choices
         self.on_model = on_model
         self.on_background = on_background
         self.on_change = on_change
         self.preview = preview
+        self.audio_devices = audio_devices if audio_devices else (lambda: [])
+        self.on_mic = on_mic
+        self.mic_state = "idle"
+        self.mic_test = MicTester()
         self.saved_notice = "Changes stay in this preview session only." if preview else "Settings are saved on this device."
         self.values = {"model": choices[0][0] if choices else "fast", "system_prompt": app.SYSTEM_PROMPT,
                        "context": 768, "max_tokens": 160, "temperature": 0.25,
-                       "highlight": True, "speech_rate": 1.0, "background": 20, "intro": True}
+                       "highlight": True, "speech_rate": 1.0, "background": 20, "intro": True,
+                       "audio_device": AUDIO_AUTO}
         if config:
             self.values.update({key: config[key] for key in self.values if key in config})
         self.page = self.row = 0
@@ -73,9 +246,78 @@ class SettingsPanel:
         self.values[key] = value
         return True
 
+    def audio_options(self):
+        ids = []
+        for device in self.audio_devices():
+            if device["id"] not in ids:
+                ids.append(device["id"])
+        return [AUDIO_AUTO] + ids
+
+    def audio_label(self, value):
+        if value == AUDIO_AUTO:
+            return "AUTO"
+        for device in self.audio_devices():
+            if device["id"] == value:
+                return f"{device['label']}  CARD {device['card']}"
+        return str(value)
+
+    def selected_audio(self):
+        wanted = self.values.get("audio_device", AUDIO_AUTO)
+        devices = self.audio_devices()
+        for device in devices:
+            if device["id"] == wanted and device.get("node", True):
+                return device
+        for device in devices:
+            if device["id"] == wanted:
+                return device
+        for device in devices:
+            if device.get("node", True):
+                return device
+        return None
+
+    def cycle_audio(self, direction=1):
+        options = self.audio_options()
+        if not options:
+            return
+        current = self.values.get("audio_device", AUDIO_AUTO)
+        if current in options:
+            value = options[(options.index(current) + direction) % len(options)]
+        else:
+            value = options[0] if direction > 0 else options[-1]
+        if not self.store("audio_device", value):
+            return
+        if value == AUDIO_AUTO:
+            self.note = "Automatic device selection restored."
+        else:
+            device = next((d for d in self.audio_devices() if d["id"] == value), None)
+            if device and device.get("node", True):
+                self.note = f"Using {device['label']}. Run TEST MICROPHONE below."
+            else:
+                self.note = "That microphone is not connected right now."
+
+    def start_mic_test(self):
+        if self.mic_test.busy():
+            return
+        device = self.selected_audio()
+        if device is None:
+            self.note = "No capture device was found."
+            return
+        if self.mic_test.start(device):
+            self.note = f"Recording from {device['label']}..."
+        else:
+            self.note = "Could not open the microphone."
+
+    def update(self):
+        if self.mic_test.state == "idle":
+            return
+        self.mic_test.update()
+        status = self.mic_test.status()
+        if status:
+            self.note = status
+
     def focus_rect(self):
         if self.editing:
-            x, width = app.key_geometry(self.keyboard_row)[self.keyboard_col]
+            x, width = app.key_geometry(self.keyboard_row, PROMPT_KEYS[self.keyboard_row])[self.keyboard_col]
             return x, app.KEY_TOP + self.keyboard_row * app.KEY_STEP, width, app.KEY_HEIGHT
         if not self.detail_focus:
             return NAV_X, NAV_Y + self.page * NAV_STEP, NAV_W, 40
@@ -86,7 +328,8 @@ class SettingsPanel:
     def render_key(self):
         return (self.page, self.row, self.detail_focus, self.editing, self.select_all,
                 self.draft, self.cursor, self.prompt_scroll, self.prompt_follow_cursor,
-                self.keyboard_row, self.keyboard_col, self.note, tuple(self.values.items()))
+                self.keyboard_row, self.keyboard_col, self.note, tuple(self.values.items()),
+                self.mic_test.state, int(self.mic_test.progress * 8), self.mic_test.status())
 
     def row_rect(self, index):
         step = 56 if self.page == 0 else 52
@@ -99,7 +342,7 @@ class SettingsPanel:
         self.detail_focus = True
         self.keyboard_row = self.keyboard_col = self.prompt_scroll = 0
         self.prompt_follow_cursor = True
-        self.note = "Use the keyboard below, or type on the PC." if self.preview else "A types; B deletes; X applies; Y selects all."
+        self.note = "Use the keyboard below, or type on the PC. MIC dictates into the prompt." if self.preview else "A types, B deletes, X applies. MIC dictates into the prompt."
 
     def apply_prompt(self):
         if not self.draft.strip():
@@ -138,13 +381,18 @@ class SettingsPanel:
             self.select_all = True
             self.prompt_follow_cursor = True
             self.note = "All text selected; type to replace it."
+        elif key == "MIC":
+            if self.on_mic:
+                self.on_mic()
+            else:
+                self.note = "Dictation is not available in this session."
         else:
             self.text_input(" " if key == "SPACE" else key)
 
     def keyboard_hit(self, x, y):
         for row, keys in enumerate(PROMPT_KEYS):
             if app.KEY_TOP + row * app.KEY_STEP <= y < app.KEY_TOP + row * app.KEY_STEP + app.KEY_HEIGHT:
-                for column, (left, width) in enumerate(app.key_geometry(row)):
+                for column, (left, width) in enumerate(app.key_geometry(row, keys)):
                     if left <= x < left + width:
                         return row, column
 
@@ -194,6 +442,12 @@ class SettingsPanel:
             self.edit_prompt()
         elif self.page in PAGE_ROWS:
             key, _ = PAGE_ROWS[self.page][self.row]
+            if key == "audio_device":
+                self.cycle_audio(direction)
+                return
+            if key == "audio_test":
+                self.start_mic_test()
+                return
             options = OPTIONS[key]
             current = self.values[key]
             if current in options:
@@ -348,8 +602,8 @@ class SettingsPanel:
         cache.draw(small, app.wrap_pixels(small, self.note, app.MSG_RIGHT - app.MSG_LEFT)[0],
                    app.MSG_LEFT, 240, app.GREEN_DIM)
         app.draw_keyboard(renderer, fonts, cache, self.keyboard_row, self.keyboard_col,
-                          background, action_row=PROMPT_ACTIONS)
-        controls = "A TYPE  B DEL  X APPLY  Y ALL  L1 NEWLINE  R2 CLOSE"
+                          background, mic_state=self.mic_state, action_row=PROMPT_ACTIONS)
+        controls = "MIC DICTATES   A TYPE   B DEL   X APPLY   R2 CLOSE"
         cache.draw(small, controls, (app.W - app.text_width(small, controls)) // 2, 450, app.MUTED)
 
     def draw(self, renderer, fonts, cache, background):
@@ -416,28 +670,37 @@ class SettingsPanel:
                     if active:
                         cache.draw(small, "ACTIVE", DETAIL_X + DETAIL_W - 52, rect[1] + 10, app.GREEN)
                 else:
-                    value = self.values[key]
-                    if isinstance(value, bool):
-                        value = "ON" if value else "OFF"
-                    elif key in ("context", "max_tokens"):
-                        value = f"{value} tokens"
-                    elif key == "background":
-                        value = f"{value}%"
-                    elif key == "speech_rate":
-                        value = f"{value:g}x"
+                    show_arrows = True
+                    if key == "audio_device":
+                        display = self.audio_label(self.values.get(key, AUDIO_AUTO))
+                    elif key == "audio_test":
+                        display = self.mic_test.status()
+                        show_arrows = False
+                    else:
+                        value = self.values[key]
+                        if isinstance(value, bool):
+                            display = "ON" if value else "OFF"
+                        elif key in ("context", "max_tokens"):
+                            display = f"{value} tokens"
+                        elif key == "background":
+                            display = f"{value}%"
+                        elif key == "speech_rate":
+                            display = f"{value:g}x"
+                        else:
+                            display = str(value)
                     cache.draw(small, label, DETAIL_X + 10, rect[1] + 6, app.MUTED)
-                    cache.draw(body, str(value), DETAIL_X + 10, rect[1] + 23, app.GREEN)
-                    cache.draw(body, "<  >", DETAIL_X + DETAIL_W - 48, rect[1] + 23, app.GREEN_DIM)
+                    cache.draw(body, display, DETAIL_X + 10, rect[1] + 23, app.GREEN)
+                    if show_arrows:
+                        cache.draw(body, "<  >", DETAIL_X + DETAIL_W - 48, rect[1] + 23, app.GREEN_DIM)
             hints = {
                 0: ("Select another model without closing the app.", "Chat and draft are retained."),
                 2: ("TOP-K 40   TOP-P 0.9   REPEAT 1.08", "Lower temperature means less variation."),
-                3: ("Offline speech: espeak-ng",
-                    "F6 previews highlighting and reading speed." if self.preview else "Highlight and speed apply to spoken replies.",
-                    "No audio is played in this preview." if self.preview else "Output: speaker / USB audio when available."),
+                3: ("Pick the device you hear yourself clearest on,",
+                    "then run TEST MICROPHONE to record and play it back."),
                 4: ("Static last-frame image; no video loop.",
                     "F9 replays the intro when enabled." if self.preview else "Opening animation setting applies next launch."),
             }
-            y = 341 if self.page == 0 else 327
+            y = 341 if self.page == 0 else (357 if self.page == 3 else 327)
             for hint in hints.get(self.page, ()):
                 cache.draw(small, hint, DETAIL_X, y, app.MUTED)
                 y += 20

@@ -10,4 +10,14 @@
 		<genre>Artificial Intelligence</genre>
 		<releasedate>20261018T000000</releasedate>
 	</game>
+	<game>
+		<path>./MIC TEST.sh</path>
+		<name>MIC TEST</name>
+		<desc>Record a few seconds from each audio capture card, play it back and compare speech quality. Use it to find the microphone the R36S hears best.</desc>
+		<image>./227-art.jpg</image>
+		<developer>1Z99</developer>
+		<publisher>1Z99</publisher>
+		<genre>Utility</genre>
+		<releasedate>20261018T000000</releasedate>
+	</game>
 </gameList>

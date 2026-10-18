@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Controller-first offline LLM client for the R36S."""
 
+import array
 import ast
 import ctypes
 from collections import OrderedDict
@@ -34,6 +35,7 @@ WHISPER_BIN = ROOT / "whisper" / "whisper-cli"
 WHISPER_MODELS = MODELS / "whisper"
 WHISPER_THREADS = 4
 MIC_WAV = Path("/tmp/project_227_mic.wav")
+MIC_LOG = Path("/tmp/project_227_mic.log")
 MIC_MAX_SECONDS = 30.0
 TTS_WAV = Path("/tmp/project_227_tts.wav")
 TTS_INTERNAL_DEVICE = "default"
@@ -184,6 +186,55 @@ def resolve_whisper_model():
     return preferred
 
 
+def mic_log(message):
+    try:
+        with MIC_LOG.open("a") as handle:
+            handle.write(f"{time.strftime('%H:%M:%S')} {message}\n")
+    except OSError:
+        pass
+
+
+def capture_node_exists(card):
+    return Path(f"/dev/snd/pcmC{card}D0c").exists()
+
+
+def wav_peak(path):
+    try:
+        with wave.open(str(path), "rb") as handle:
+            if handle.getsampwidth() != 2:
+                return None
+            data = handle.readframes(min(handle.getnframes(), 16000 * 60))
+    except (OSError, wave.Error, MemoryError):
+        return None
+    if not data:
+        return 0
+    samples = array.array("h")
+    samples.frombytes(data[: len(data) - (len(data) % 2)])
+    return max((abs(sample) for sample in samples), default=0)
+
+
+def repair_wav_header(path):
+    """Fix the RIFF/data sizes arecord leaves as a 2 GB placeholder when interrupted."""
+    try:
+        size = path.stat().st_size
+    except OSError:
+        return
+    if size < 44:
+        return
+    try:
+        with path.open("r+b") as handle:
+            header = handle.read(64)
+            data_index = header.find(b"data")
+            if data_index < 0:
+                return
+            handle.seek(4)
+            handle.write(struct.pack("<I", size - 8))
+            handle.seek(data_index + 4)
+            handle.write(struct.pack("<I", size - (data_index + 8)))
+    except OSError:
+        pass
+
+
 def detect_capture_devices():
     devices = []
     try:
@@ -195,19 +246,42 @@ def detect_capture_devices():
         if not match:
             continue
         card = int(match.group(1))
-        label = match.group(3) or match.group(2)
-        haystack = f"{match.group(2)} {label} {match.group(5)}".lower()
+        index = int(match.group(4))
+        card_id = match.group(2)
+        label = match.group(3) or card_id
+        haystack = f"{card_id} {label} {match.group(5)}".lower()
         devices.append({
-            "arg": f"plughw:{card},{int(match.group(4))}",
+            "arg": f"plughw:CARD={card_id},DEV={index}",
             "card": card,
+            "index": index,
+            "id": card_id,
             "label": label,
+            "node": capture_node_exists(card),
             "usb": "usb" in haystack,
             "rk817": "rk817" in haystack or "rockchip" in haystack,
         })
     return devices
 
 
+def resolve_capture_device(devices, wanted):
+    """Pick the device the user saved, matched by stable card id (survives renumbering)."""
+    if not wanted or wanted == "auto":
+        return None
+    usable = [device for device in devices if device["id"] == wanted and device["node"]]
+    if usable:
+        return usable[0]
+    named = [device for device in devices if device["id"] == wanted]
+    return named[0] if named else None
+
+
 def choose_capture_device(devices):
+    """Return the best available capture device when no explicit preference is set."""
+    usable = [device for device in devices if device["node"]]
+    for device in usable:
+        if device["usb"]:
+            return device
+    if usable:
+        return usable[0]
     for device in devices:
         if device["usb"]:
             return device
@@ -1226,8 +1300,8 @@ class LocalEngine:
             self.starter.join(timeout=2)
 
 
-def key_geometry(row_index):
-    row = KEYBOARD[row_index]
+def key_geometry(row_index, row=None):
+    row = KEYBOARD[row_index] if row is None else row
     count = len(row)
     if count == 1:
         return [(CONTENT_X, CONTENT_W)]
@@ -1536,7 +1610,7 @@ def draw_keyboard(renderer, fonts, cache, key_row, key_col, background=None,
     key_font = fonts[3]
     for row_index, base_row in enumerate(KEYBOARD):
         row = action_row if action_row is not None and row_index == len(KEYBOARD) - 1 else base_row
-        geometry = key_geometry(row_index)
+        geometry = key_geometry(row_index, row)
         key_y = KEY_TOP + row_index * KEY_STEP
         for column, key in enumerate(row):
             x, width = geometry[column]
@@ -1899,11 +1973,15 @@ def main():
     mic_state = "idle"
     mic_proc = None
     mic_started = 0.0
+    mic_transcribe_started = 0.0
     mic_note = ""
     mic_note_time = 0.0
     whisper_model = resolve_whisper_model()
     mic_ready = WHISPER_BIN.exists() and whisper_model.exists()
     capture_device = choose_capture_device(detect_capture_devices())
+    resolved_start = resolve_capture_device(detect_capture_devices(), engine.config.get("audio_device", "auto"))
+    if resolved_start:
+        capture_device = resolved_start
     scroll = 100000.0
     scroll_target = 100000.0
     follow_bottom = True
@@ -2041,6 +2119,20 @@ def main():
     def transcribe_worker():
         text = ""
         error = ""
+        if not MIC_WAV.exists() or MIC_WAV.stat().st_size < 8000:
+            mic_log("transcribe: no usable audio (missing or too short)")
+            events.put(("mic_text", ""))
+            return
+        try:
+            peak = wav_peak(MIC_WAV)
+            mic_log(f"transcribe: peak={peak} size={MIC_WAV.stat().st_size}")
+        except Exception as exc:  # noqa: BLE001 - never leave the mic stuck
+            mic_log(f"transcribe: peak check failed {exc}")
+            peak = None
+        if peak is not None and peak < 50:
+            mic_log("transcribe: microphone captured silence")
+            events.put(("mic_text", ""))
+            return
         try:
             result = subprocess.run(
                 [str(WHISPER_BIN), "-m", str(whisper_model), "-f", str(MIC_WAV),
@@ -2049,10 +2141,16 @@ def main():
             if result.returncode != 0:
                 tail = (result.stderr or "transcription failed").strip().splitlines()
                 error = tail[-1][:120] if tail else "transcription failed"
+                mic_log(f"transcribe: whisper rc={result.returncode} err={error}")
             else:
                 text = clean_transcript(result.stdout)
+                mic_log(f"transcribe: whisper ok text={text[:80]!r}")
         except (OSError, subprocess.SubprocessError) as exc:
             error = str(exc)[:120]
+            mic_log(f"transcribe: whisper exception {error}")
+        except Exception as exc:  # noqa: BLE001 - never leave the mic stuck
+            error = str(exc)[:120]
+            mic_log(f"transcribe: unexpected {error}")
         if error:
             events.put(("mic_error", error))
         else:
@@ -2062,33 +2160,39 @@ def main():
         nonlocal mic_state, mic_proc, mic_started, suggest_focus, mic_note, mic_note_time, capture_device, mic_ready
         if mic_state != "idle":
             return
-        capture_device = choose_capture_device(detect_capture_devices())
+        devices = detect_capture_devices()
+        wanted_mic = engine.config.get("audio_device", "auto")
+        capture_device = resolve_capture_device(devices, wanted_mic) or choose_capture_device(devices)
         mic_ready = WHISPER_BIN.exists() and whisper_model.exists() and capture_device is not None
         if not mic_ready:
+            mic_log(f"start: not ready device={capture_device} bin={WHISPER_BIN.exists()} model={whisper_model.exists()}")
             mic_note = "VOICE UNAVAILABLE"
             mic_note_time = time.monotonic()
             return
         enable_capture_input(capture_device)
         device_arg = capture_device["arg"]
+        MIC_WAV.unlink(missing_ok=True)
         try:
             mic_proc = subprocess.Popen(
                 ["arecord", "-D", device_arg, "-f", "S16_LE", "-r", "16000",
                  "-c", "1", "-t", "wav", "-q", str(MIC_WAV)],
                 stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        except OSError:
+        except OSError as exc:
             mic_proc = None
+            mic_log(f"start: arecord spawn failed {exc}")
             mic_note = "MIC ERROR"
             mic_note_time = time.monotonic()
             return
         mic_started = time.monotonic()
         mic_note = ""
         mic_state = "recording"
+        mic_log(f"start: device={device_arg} card={capture_device['card']} usb={capture_device['usb']}")
         if suggest_focus:
             suggest_focus = False
             park_key_cursor()
 
     def stop_recording():
-        nonlocal mic_state, mic_proc
+        nonlocal mic_state, mic_proc, mic_transcribe_started
         if mic_state != "recording":
             return
         proc = mic_proc
@@ -2103,7 +2207,12 @@ def main():
                     proc.wait(timeout=2)
                 except subprocess.TimeoutExpired:
                     proc.kill()
+        size = MIC_WAV.stat().st_size if MIC_WAV.exists() else 0
+        code = proc.returncode if proc is not None else None
+        repair_wav_header(MIC_WAV)
+        mic_log(f"stop: arecord rc={code} wav={size}B dur={time.monotonic() - mic_started:.1f}s")
         mic_state = "transcribing"
+        mic_transcribe_started = time.monotonic()
         threading.Thread(target=transcribe_worker, daemon=True).start()
 
     def toggle_mic():
@@ -2139,7 +2248,10 @@ def main():
             if result.returncode != 0:
                 raise RuntimeError("Speech synthesis failed")
             timings = json.loads(result.stdout)
-            devices = tts_output_devices()
+            if engine.config.get("audio_device", "auto") != "auto" and capture_device is not None:
+                devices = [capture_device["arg"]]
+            else:
+                devices = tts_output_devices()
         except (OSError, subprocess.SubprocessError, ValueError, RuntimeError):
             output.unlink(missing_ok=True)
             events.put(("tts_done", token))
@@ -2384,7 +2496,7 @@ def main():
         restart_thread.start()
 
     def apply_setting(key, value):
-        nonlocal background, model_index
+        nonlocal background, model_index, capture_device
         reload_needed = (
             key == "model" and (engine_state != "READY" or
                                (getattr(engine, "profile", None) or engine.config.get("model")) != value)
@@ -2420,11 +2532,17 @@ def main():
             stop_speaking()
         elif key == "model":
             model_index = next((i for i, (name, _) in enumerate(model_choices) if name == value), 0)
+        elif key == "audio_device":
+            audio_devices = detect_capture_devices()
+            capture_device = resolve_capture_device(audio_devices, value) or choose_capture_device(audio_devices)
+            if capture_device:
+                enable_capture_input(capture_device)
         if reload_needed:
             reload_engine()
         return True
 
-    settings = SettingsPanel(model_choices, config=engine.config, on_change=apply_setting, preview=False)
+    settings = SettingsPanel(model_choices, config=engine.config, on_change=apply_setting, preview=False,
+                             audio_devices=lambda: detect_capture_devices(), on_mic=toggle_mic)
 
     try:
         while running:
@@ -2682,7 +2800,10 @@ def main():
                 elif kind == "mic_text":
                     mic_state = "idle"
                     if event[1]:
-                        insert_transcript(event[1])
+                        if overlay == "settings" and settings.editing:
+                            settings.text_input(event[1])
+                        else:
+                            insert_transcript(event[1])
                     else:
                         mic_note = "HEARD NOTHING"
                         mic_note_time = now
@@ -2737,6 +2858,11 @@ def main():
 
             if mic_state == "recording" and now - mic_started > MIC_MAX_SECONDS:
                 stop_recording()
+            if mic_state == "transcribing" and now - mic_transcribe_started > 200:
+                mic_log("watchdog: transcription timed out; resetting mic")
+                mic_state = "idle"
+                mic_note = "VOICE ERROR"
+                mic_note_time = now
             if mic_note and now - mic_note_time > 3.0:
                 mic_note = ""
             if now - last_metrics > 2:
@@ -2771,6 +2897,11 @@ def main():
                 if (not suggestions or mic_state != "idle") and suggest_focus:
                     suggest_focus = False
                     park_key_cursor()
+            if overlay == "settings":
+                settings.mic_state = mic_state
+                settings.update()
+            elif settings.mic_test.state != "idle":
+                settings.mic_test.cancel()
             speak_hover = hovered_speak_index()
             message_state = tuple((item["role"], item.get("content", ""),
                                    bool(item.get("pending")), item.get("reveal"))

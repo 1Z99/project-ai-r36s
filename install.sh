@@ -87,7 +87,7 @@ WHISPER_FILE="ggml-tiny.en-q5_1.bin"
 WHISPER_SHA="c77c5766f1cef09b6b7d47f21b546cbddd4157886b3b5d6d4f709e91e66c7c2b"
 WHISPER_HF="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/${WHISPER_FILE}"
 
-APP_FILES="project_ai_r36s.py project_ai_settings.py"
+APP_FILES="project_ai_r36s.py project_ai_settings.py mic_test.py"
 ASSET_FILES="logo.rgba intro-frames.zip intro-background.rgba words.txt 227-art.jpg"
 LICENSE_FILES="llama.cpp-MIT.txt whisper.cpp-MIT.txt LFM2.5-Open-License.txt DejaVu-fonts-copyright espeak-ng-NOTICE.txt"
 
@@ -301,14 +301,14 @@ install_code() {
 install_system() {
     echo "Creating the EmulationStation system page..."
     if [ "$DRY_RUN" -eq 1 ]; then
-        info "would create $SYSDIR/${LAUNCHER_NAME} and gamelist.xml"
+        info "would create $SYSDIR/${LAUNCHER_NAME}, MIC TEST.sh and gamelist.xml"
         return 0
     fi
-    install_files system "$SYSDIR" "${LAUNCHER_NAME}" gamelist.xml
+    install_files system "$SYSDIR" "${LAUNCHER_NAME}" "MIC TEST.sh" gamelist.xml
     if [ -f "$ROOT/227-art.jpg" ]; then
         cp -f "$ROOT/227-art.jpg" "$SYSDIR/227-art.jpg"
     fi
-    chmod 755 "$SYSDIR/${LAUNCHER_NAME}" 2>/dev/null || true
+    chmod 755 "$SYSDIR/${LAUNCHER_NAME}" "$SYSDIR/MIC TEST.sh" 2>/dev/null || true
 }
 
 # Give the 227 system a name and artwork in every installed EmulationStation
