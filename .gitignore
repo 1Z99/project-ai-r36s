@@ -6,3 +6,4 @@ project-ai-r36s-runtime-arm64.tar.gz
 project-ai-r36s-runtime-arm64.tar.gz.sha256
 *.gguf
 *.bin
+installer/*.log

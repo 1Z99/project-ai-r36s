@@ -1,473 +1,216 @@
 #!/bin/sh
-# 227 AI - one-shot installer for the R36S (dArkOSRE, aarch64).
-#
-# 227 AI is a private, fully offline language model that runs on the handheld.
-# This script downloads and installs everything it needs (inference runtime,
-# the LFM 2.5 model, the speech-to-text engine, and the interface artwork),
-# then registers a new EmulationStation system page called "227" so the app is
-# launched like a game instead of from the Tools menu.
-#
-# Safe to re-run: verified files are kept, interrupted downloads resume, and
-# the EmulationStation configuration is changed at most once (with a backup).
-#
-# Usage:
-#   sh install.sh                 # normal install to /roms2
-#   sh install.sh --dry-run       # show the plan without downloading anything
-#   sh install.sh --prefix DIR    # install under DIR (testing)
-#   sh install.sh --no-system     # do not touch the EmulationStation config
-#   sh install.sh --es-cfg PATH   # use a specific es_systems.cfg
-#   sh install.sh --themes DIR    # EmulationStation themes directory
-#   sh install.sh --force         # re-download and overwrite existing files
-#
-# Environment overrides (mainly for development):
-#   PROJECT_AI_RUNTIME_LOCAL=PATH   use a local runtime tarball instead of the
-#                                   GitHub release (its .sha256 is used if it
-#                                   sits next to the tarball).
-#   PROJECT_AI_RAW_BASE=URL         override the raw file base (app/assets)
-#   PROJECT_AI_REL_BASE=URL         override the release download base
-
+# Bootstrap only. App ownership and card selection belong to the Python manager.
 set -eu
 
-VERSION="1.0.0"
-OWNER="1Z99"
-REPO="project-ai-r36s"
-REF="main"
-RAW="${PROJECT_AI_RAW_BASE:-https://raw.githubusercontent.com/${OWNER}/${REPO}/${REF}}"
-REL="${PROJECT_AI_REL_BASE:-https://github.com/${OWNER}/${REPO}/releases/latest/download}"
+help() {
+    printf '%s\n' \
+        '227 AI graphical install / update / uninstall manager' \
+        'Usage: sh install.sh [--source PATH] [--desktop]' \
+        '       sh install.sh --cli --roms PATH --action install|update|uninstall [--yes] [--dry-run]' \
+        '' \
+        'The graphical manager always asks you to select the destination card.' \
+        'CLI mutations require --yes; uninstall deletes settings and chats on that card.' \
+        'CLI only: --es-cfg PATH, --themes PATH. Dry-run requires an explicit --roms.' \
+        'Dry-run uses an existing core only; it never downloads or writes files.' \
+        'Development: PROJECT_AI_RAW_BASE, PROJECT_AI_REL_BASE, PROJECT_AI_RUNTIME_LOCAL.'
+}
 
-PREFIX="/roms2"
-ES_CFG="/etc/emulationstation/es_systems.cfg"
-THEMES=""
-DRY_RUN=0
-DO_SYSTEM=1
-FORCE=0
+CLI=0 DRY=0 YES=0 DESKTOP=0 SOURCE_SET=0 CLI_FLAGS=0
+ROMS='' ACTION='' SOURCE='' THEMES=''
+ES_CFG=/etc/emulationstation/es_systems.cfg
+LOG='' TEMP=''
+fail() {
+    printf '227 AI: %s\n' "$*" >&2
+    if [ -n "$LOG" ]; then
+        printf '227 AI: %s\n' "$*" >> "$LOG" 2>/dev/null || true
+    fi
+    if [ "$CLI" -eq 0 ] && command -v dialog >/dev/null 2>&1; then
+        dialog --title '227 AI bootstrap failed' --msgbox "$*
 
-while [ $# -gt 0 ]; do
-    case "$1" in
-        --prefix)    PREFIX="$2"; shift 2 ;;
-        --prefix=*)  PREFIX="${1#*=}"; shift ;;
-        --es-cfg)    ES_CFG="$2"; shift 2 ;;
-        --es-cfg=*)  ES_CFG="${1#*=}"; shift ;;
-        --themes)    THEMES="$2"; shift 2 ;;
-        --themes=*)  THEMES="${1#*=}"; shift ;;
-        --dry-run)   DRY_RUN=1; shift ;;
-        --no-system) DO_SYSTEM=0; shift ;;
-        --force)     FORCE=1; shift ;;
-        -h|--help)   awk 'NR>1 { if ($0 ~ /^set /) exit; print }' "$0"; exit 0 ;;
-        *)           echo "Unknown option: $1" >&2; exit 2 ;;
+Log: ${LOG:-unavailable (manager storage not ready)}
+Fix the problem and launch Install 227 AI again.
+If no terminal is available, inspect the log over SSH." 16 68 || true
+    fi
+    exit 1
+}
+
+parse() {
+    while [ "$#" -gt 0 ]; do
+        case "$1" in
+            -h|--help) help; exit 0 ;;
+            --cli) CLI=1; shift ;;
+            --dry-run) DRY=1; CLI_FLAGS=1; shift ;;
+            --yes) YES=1; CLI_FLAGS=1; shift ;;
+            --desktop) DESKTOP=1; shift ;;
+            --roms|--action|--source|--es-cfg|--themes)
+                [ "$#" -ge 2 ] && [ -n "$2" ] || fail "Missing value for $1"
+                case "$2" in --*) fail "Missing value for $1" ;; esac
+                case "$1" in
+                    --roms) ROMS=$2; CLI_FLAGS=1 ;;
+                    --action) ACTION=$2; CLI_FLAGS=1 ;;
+                    --source) SOURCE=$2; SOURCE_SET=1 ;;
+                    --es-cfg) ES_CFG=$2; CLI_FLAGS=1 ;;
+                    --themes) THEMES=$2; CLI_FLAGS=1 ;;
+                esac
+                shift 2 ;;
+            *) fail "Unknown option: $1 (see --help)" ;;
+        esac
+    done
+}
+parse "$@"
+[ "$CLI_FLAGS" -eq 0 ] || [ "$CLI" -eq 1 ] || fail 'Use --cli for --roms, --action, --yes, --dry-run, --es-cfg or --themes.'
+if [ "$CLI" -eq 1 ]; then
+    [ "$DESKTOP" -eq 0 ] || fail '--desktop is graphical only.'
+    [ -n "$ROMS" ] || fail '--cli requires an explicit --roms PATH.'
+    case "$ACTION" in install|update|uninstall) ;; *) fail '--cli requires --action install|update|uninstall.' ;; esac
+    [ "$DRY" -eq 1 ] || [ "$YES" -eq 1 ] || fail 'CLI changes require --yes. Uninstall deletes settings and chats on the selected card.'
+fi
+command -v python3 >/dev/null 2>&1 || fail 'Python 3 is required.'
+SELF_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+SELF="$SELF_DIR/$(basename -- "$0")"
+MODULES='' LOCAL_REPO=0
+if [ -f "$SELF_DIR/installer_core.py" ]; then
+    MODULES=$SELF_DIR
+    case "$SELF_DIR" in
+        /roms/tools/227-ai-manager|/roms2/tools/227-ai-manager) ;;
+        *) LOCAL_REPO=1 ;; # A local, self-contained manager/bundle test build.
     esac
-done
-
-TOOLS="${PREFIX}/tools"
-ROOT="${TOOLS}/project_ai"
-WHISPER_DIR="${ROOT}/whisper"
-MODELS_DIR="${ROOT}/models"
-LICENSE_DIR="${ROOT}/licenses"
-SYSDIR="${PREFIX}/227ai"
-
-detect_themes() {
-    [ -n "$THEMES" ] && { echo "$THEMES"; return; }
-    resolved="$(readlink -f /etc/emulationstation/themes 2>/dev/null)"
-    for candidate in "$resolved" /roms/themes "${PREFIX}/themes"; do
-        [ -n "$candidate" ] && [ -d "$candidate" ] && { echo "$candidate"; return; }
-    done
-    echo "/roms/themes"
-}
-
-THEMES="$(detect_themes)"
-
-RUNTIME_ASSET="project-ai-r36s-runtime-arm64.tar.gz"
-LAUNCHER_NAME="227 AI.sh"
-
-LFM_FILE="LFM2.5-350M-QAD-Q4_0.gguf"
-LFM_SHA="3d10b6ab8fc91a919534b9558e266255aca0bbc7f6d015963599aa9e74e05b1d"
-LFM_HF="https://huggingface.co/LiquidAI/LFM2.5-350M-GGUF/resolve/main/${LFM_FILE}"
-
-WHISPER_FILE="ggml-tiny.en-q5_1.bin"
-WHISPER_SHA="c77c5766f1cef09b6b7d47f21b546cbddd4157886b3b5d6d4f709e91e66c7c2b"
-WHISPER_HF="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/${WHISPER_FILE}"
-
-APP_FILES="project_ai_r36s.py project_ai_settings.py mic_test.py"
-ASSET_FILES="logo.rgba intro-frames.zip intro-background.rgba words.txt 227-art.jpg"
-LICENSE_FILES="llama.cpp-MIT.txt whisper.cpp-MIT.txt LFM2.5-Open-License.txt DejaVu-fonts-copyright espeak-ng-NOTICE.txt"
-
-info() { printf '  %s\n' "$*"; }
-warn() { printf '  ! %s\n' "$*" >&2; }
-die()  { printf '\nERROR: %s\n' "$*" >&2; exit 1; }
-need() { command -v "$1" >/dev/null 2>&1; }
-
-have_curl=0
-need curl && have_curl=1
-
-# --- downloads -------------------------------------------------------------
-
-# download one URL to dest (path without the .part suffix). Resumes if a
-# previous .part file exists. Returns non-zero on failure.
-download_try() {
-    url="$1"; dest="$2"; part="${dest}.part"
-    info "downloading $(basename "$dest")"
-    if [ "$have_curl" -eq 1 ]; then
-        if [ -s "$part" ]; then
-            curl -fL --retry 3 --retry-delay 2 -C - -o "$part" "$url" || return 1
-        else
-            curl -fL --retry 3 --retry-delay 2 -o "$part" "$url" || return 1
-        fi
-    else
-        wget -c -O "$part" "$url" || return 1
+elif [ -f "$SELF_DIR/installer/installer_core.py" ]; then
+    MODULES="$SELF_DIR/installer"
+    LOCAL_REPO=1
+    if [ "$SOURCE_SET" -eq 0 ] && [ -d "$SELF_DIR/app" ]; then
+        SOURCE=$SELF_DIR
+        SOURCE_SET=1
+        set -- "$@" --source "$SOURCE"
     fi
-    mv -f "$part" "$dest"
-}
+fi
 
-sha_of() { sha256sum "$1" | cut -d' ' -f1; }
-
-verify() { # file expected-sha
-    [ -f "$1" ] || return 1
-    [ "$(sha_of "$1")" = "$2" ]
-}
-
-# download dest, verify against sha; try primary then optional fallback.
-download_verified() { # dest sha primary_url [fallback_url]
-    dest="$1"; sha="$2"; primary="$3"; fallback="${4:-}"
-    if [ "$FORCE" -eq 0 ] && verify "$dest" "$sha"; then
-        info "keep existing $(basename "$dest")"
-        return 0
-    fi
-    if [ "$DRY_RUN" -eq 1 ]; then
-        info "would download $(basename "$dest")"
-        return 0
-    fi
-    rm -f "$dest" "${dest}.part"
-    if download_try "$primary" "$dest" && verify "$dest" "$sha"; then
-        return 0
-    fi
-    warn "download from primary source failed for $(basename "$dest")"
-    rm -f "$dest" "${dest}.part"
-    if [ -n "$fallback" ]; then
-        info "trying mirror..."
-        if download_try "$fallback" "$dest" && verify "$dest" "$sha"; then
-            return 0
-        fi
-    fi
-    die "could not obtain a verified copy of $(basename "$dest")"
-}
-
-# fetch a small text file (no keep/resume semantics)
-fetch_text() { # url dest
-    if [ "$have_curl" -eq 1 ]; then
-        curl -fsSL --retry 3 --retry-delay 2 -o "$2" "$1"
-    else
-        wget -q -O "$2" "$1"
-    fi
-}
-
-# --- preflight -------------------------------------------------------------
-
-lib_present() { # soname-substring
-    if need ldconfig && ldconfig -p 2>/dev/null | grep -q "$1"; then
-        return 0
-    fi
-    [ -n "$(find /usr/lib /lib -maxdepth 2 -name "$1*" 2>/dev/null | head -n1)" ]
-}
-
-preflight() {
-    echo "227 AI installer v${VERSION}"
-    echo
-    echo "Checking your device..."
-
-    [ "$(id -u)" -eq 0 ] && warn "running as root; the app must run as the normal user" || true
-
-    arch="$(uname -m)"
-    if [ "$arch" = "aarch64" ]; then
-        info "architecture: $arch"
-    else
-        warn "architecture is $arch, this build is for aarch64 (R36S). Continuing anyway."
-    fi
-
-    missing=""
-    for tool in python3 sha256sum tar; do
-        need "$tool" || missing="$missing $tool"
-    done
-    if [ "$have_curl" -eq 0 ] && ! need wget; then
-        missing="$missing curl/wget"
-    fi
-    [ -n "$missing" ] && die "missing required tools:$missing"
-
-    if [ ! -d "$PREFIX" ]; then
-        die "$PREFIX not found. Insert the second SD card, or use --prefix."
-    fi
-
-    for lib in libSDL2-2.0.so.0 libSDL2_ttf-2.0.so.0 libespeak-ng.so.1; do
-        if lib_present "$lib"; then
-            info "found $lib"
-        else
-            warn "missing $lib (install: sudo apt-get install libsdl2-2.0-0 libsdl2-ttf-2.0-0 espeak-ng)"
-        fi
-    done
-    for tool in arecord aplay; do
-        need "$tool" && info "found $tool" || warn "missing $tool (microphone/audio may not work)"
-    done
-
-    free_kb="$(df -Pk "$PREFIX" 2>/dev/null | awk 'NR==2 {print $4}')"
-    if [ -n "${free_kb:-}" ] && [ "$free_kb" -lt 400000 ]; then
-        warn "only $((free_kb / 1024)) MB free on $PREFIX; about 400 MB is needed"
-    fi
-    echo
-}
-
-# --- install steps ---------------------------------------------------------
-
-make_dirs() {
-    echo "Preparing folders..."
-    if [ "$DRY_RUN" -eq 1 ]; then
-        info "would create $ROOT, $MODELS_DIR, $WHISPER_DIR, $SYSDIR"
-        return 0
-    fi
-    mkdir -p "$ROOT" "$MODELS_DIR/whisper" "$WHISPER_DIR" "$LICENSE_DIR" "$SYSDIR"
-}
-
-install_runtime() {
-    echo "Installing the inference runtime..."
-    if [ "$FORCE" -eq 0 ] && [ -x "$ROOT/runtime/llama-server" ] && [ -x "$WHISPER_DIR/whisper-cli" ]; then
-        info "runtime already installed"
-        return 0
-    fi
-    if [ "$DRY_RUN" -eq 1 ]; then
-        info "would install runtime + whisper from GitHub release"
-        return 0
-    fi
-
-    tar_file="${TMPDIR:-/tmp}/project-ai-runtime.$$.tar.gz"
-
-    if [ -n "${PROJECT_AI_RUNTIME_LOCAL:-}" ]; then
-        cp "$PROJECT_AI_RUNTIME_LOCAL" "$tar_file"
-        if [ -f "${PROJECT_AI_RUNTIME_LOCAL}.sha256" ]; then
-            want="$(cut -d' ' -f1 < "${PROJECT_AI_RUNTIME_LOCAL}.sha256")"
-            verify "$tar_file" "$want" || die "local runtime checksum mismatch"
-        else
-            warn "no checksum next to local runtime; skipping verification"
-        fi
-    else
-        sha_file="${TMPDIR:-/tmp}/project-ai-runtime.$$.sha256"
-        fetch_text "${REL}/${RUNTIME_ASSET}.sha256" "$sha_file" \
-            || die "could not fetch the runtime checksum (has the release been published?)"
-        want="$(cut -d' ' -f1 < "$sha_file")"
-        rm -f "$sha_file"
-        download_try "${REL}/${RUNTIME_ASSET}" "$tar_file" || die "runtime download failed"
-        verify "$tar_file" "$want" || { rm -f "$tar_file"; die "runtime checksum mismatch"; }
-    fi
-
-    tar -xzf "$tar_file" -C "$ROOT" || { rm -f "$tar_file"; die "could not extract the runtime"; }
-    rm -f "$tar_file"
-    chmod 755 "$ROOT/runtime/llama-server" "$WHISPER_DIR/whisper-cli" 2>/dev/null || true
-    info "runtime ready"
-}
-
-install_models() {
-    echo "Installing models (about 250 MB)..."
-    download_verified "$MODELS_DIR/${LFM_FILE}" "$LFM_SHA" \
-        "$LFM_HF" "${REL}/${LFM_FILE}"
-    download_verified "$MODELS_DIR/whisper/${WHISPER_FILE}" "$WHISPER_SHA" \
-        "$WHISPER_HF" "${REL}/${WHISPER_FILE}"
-    if [ "$DRY_RUN" -eq 0 ] && [ -f "$LICENSE_DIR/LFM2.5-Open-License.txt" ]; then
-        cp -f "$LICENSE_DIR/LFM2.5-Open-License.txt" "$MODELS_DIR/LICENSE-LFM2.5.txt"
-    fi
-}
-
-install_files() { # raw-subdir dest-dir filenames...
-    sub="$1"; dest="$2"; shift 2
-    for name in "$@"; do
-        url="${RAW}/${sub}/$(printf '%s' "$name" | sed 's/ /%20/g')"
-        target="${dest}/${name}"
-        if [ "$FORCE" -eq 0 ] && [ -f "$target" ]; then
-            info "keep existing $name"
-            continue
-        fi
-        if [ "$DRY_RUN" -eq 1 ]; then
-            info "would fetch $url"
-            continue
-        fi
-        info "fetching $name"
-        fetch_text "$url" "$target" || die "could not download $name"
-    done
-}
-
-install_code() {
-    echo "Installing application and artwork..."
-    install_files app "$TOOLS" $APP_FILES
-    install_files assets "$ROOT" $ASSET_FILES
-    install_files licenses "$LICENSE_DIR" $LICENSE_FILES
-}
-
-install_system() {
-    echo "Creating the EmulationStation system page..."
-    if [ "$DRY_RUN" -eq 1 ]; then
-        info "would create $SYSDIR/${LAUNCHER_NAME}, MIC TEST.sh and gamelist.xml"
-        return 0
-    fi
-    install_files system "$SYSDIR" "${LAUNCHER_NAME}" "MIC TEST.sh" gamelist.xml
-    if [ -f "$ROOT/227-art.jpg" ]; then
-        cp -f "$ROOT/227-art.jpg" "$SYSDIR/227-art.jpg"
-    fi
-    chmod 755 "$SYSDIR/${LAUNCHER_NAME}" "$SYSDIR/MIC TEST.sh" 2>/dev/null || true
-}
-
-# Give the 227 system a name and artwork in every installed EmulationStation
-# theme. The name comes from a per-system theme.xml folder; the photo comes
-# from a poster image (themes that read _art/posters/${system.theme}).
-install_theme() {
-    [ "$DO_SYSTEM" -eq 1 ] || return 0
-    echo "Adding 227 artwork to EmulationStation themes..."
-    if [ ! -d "$THEMES" ]; then
-        warn "no themes directory at $THEMES (skipping system artwork)"
-        return 0
-    fi
-    if [ "$DRY_RUN" -eq 1 ]; then
-        info "would add 227 name + poster to themes in $THEMES"
-        return 0
-    fi
-
-    template="${TMPDIR:-/tmp}/227-theme.$$.xml"
-    if [ -f "$ROOT/227-theme.xml" ]; then
-        cp -f "$ROOT/227-theme.xml" "$template"
-    elif ! fetch_text "${RAW}/system/227-theme.xml" "$template"; then
-        mv -f "$template" "${template}.part" 2>/dev/null || true
-        template=""
-    fi
-    poster="$ROOT/227-art.jpg"
-    count=0
-    for theme in "$THEMES"/*/; do
-        [ -f "${theme}theme.xml" ] || continue
-        fmt="$(grep -o 'formatVersion>[0-9]*' "${theme}theme.xml" 2>/dev/null | head -n1 | grep -o '[0-9]*')"
-        [ -n "$fmt" ] || fmt=7
-        mkdir -p "${theme}227"
-        if [ -n "$template" ] && [ -f "$template" ]; then
-            sed "s|<formatVersion>[0-9]*</formatVersion>|<formatVersion>${fmt}</formatVersion>|" \
-                "$template" > "${theme}227/theme.xml"
-        fi
-        if [ -d "${theme}_art/posters" ] && [ -f "$poster" ]; then
-            cp -f "$poster" "${theme}_art/posters/227.jpg"
-            rm -f "${theme}_art/posters/227.png"
-        fi
-        count=$((count + 1))
-    done
-    [ -n "$template" ] && rm -f "$template"
-    info "added 227 name + artwork to $count theme(s)"
-}
-
-write_config() {
-    if [ -f "$ROOT/config.json" ] && [ "$FORCE" -eq 0 ]; then
-        info "keeping your existing settings"
-        return 0
-    fi
-    if [ "$DRY_RUN" -eq 1 ]; then
-        info "would write a default config.json"
-        return 0
-    fi
-    cat > "$ROOT/config.json" <<'JSON'
-{
-  "model": "fast",
-  "context": 768,
-  "max_tokens": 160,
-  "temperature": 0.25,
-  "highlight": true,
-  "speech_rate": 1.0,
-  "background": 20,
-  "intro": true
-}
-JSON
-    info "wrote default settings (model: LFM 2.5)"
-}
-
-patch_es() {
-    [ "$DO_SYSTEM" -eq 1 ] || { info "not touching the EmulationStation config (--no-system)"; return 0; }
-    if [ "$DRY_RUN" -eq 1 ]; then
-        info "would register system 227 in $ES_CFG"
-        return 0
-    fi
-    if [ ! -f "$ES_CFG" ]; then
-        warn "no EmulationStation config at $ES_CFG (skipping registration)"
-        return 0
-    fi
-
-    py="${TMPDIR:-/tmp}/patch-es-227.$$.py"
-    cat > "$py" <<'PY'
-import os, shutil, sys
-path = sys.argv[1]
-block = (
-    '\t<system>\n'
-    '\t\t<name>227</name>\n'
-    '\t\t<fullname>227</fullname>\n'
-    '\t\t<path>/roms2/227ai/</path>\n'
-    '\t\t<extension>.sh .SH</extension>\n'
-    '\t\t<command>%ROM%</command>\n'
-    '\t\t<platform>227</platform>\n'
-    '\t\t<theme>227</theme>\n'
-    '\t\t<manufacturer>1Z99</manufacturer>\n'
-    '\t\t<release>2026</release>\n'
-    '\t</system>\n'
-)
-with open(path, encoding='utf-8', errors='replace') as fh:
-    data = fh.read()
-if '<name>227</name>' in data:
-    print('  system 227 is already registered')
-    sys.exit(0)
-if not os.path.exists(path + '.pre-227ai'):
-    shutil.copy2(path, path + '.pre-227ai')
-    print('  backed up to ' + path + '.pre-227ai')
-index = data.rfind('</systemList>')
-if index == -1:
-    print('  ERROR: could not find </systemList> in ' + path)
-    sys.exit(2)
-tmp = path + '.new'
-with open(tmp, 'w', encoding='utf-8') as fh:
-    fh.write(data[:index] + block + data[index:])
-os.replace(tmp, path)
-print('  registered system 227 in ' + path)
+# Keep even core-only dry runs usable without SDL, the CLI module, or bootstrap writes.
+if [ "$DRY" -eq 1 ]; then
+    [ -n "$MODULES" ] || fail 'Dry-run needs an existing installer_core.py beside install.sh or in installer/. Nothing was downloaded or written.'
+    exec python3 -B - "$MODULES" "$ROMS" "$ACTION" "$ES_CFG" "$THEMES" <<'PY'
+import json
+import sys
+sys.path.insert(0, sys.argv[1])
+from installer_core import Installer, discover_cards
+try:
+    print(json.dumps(discover_cards(), indent=2))
+    worker = Installer(sys.argv[2], es_cfg=sys.argv[4], themes=sys.argv[5] or None)
+    worker.validate_card()
+    print("DRY RUN: {} on {}. No files written or downloaded.".format(sys.argv[3], worker.prefix))
+    print("App/data: {} | System: {} | Manager retained".format(worker.root, worker.sysdir))
+    if sys.argv[3] == "uninstall":
+        print("WARNING: uninstall would delete settings, chats, history and models on this card.")
+except Exception as error:
+    print("Dry-run failed: {}".format(error), file=sys.stderr)
+    sys.exit(1)
 PY
+fi
 
-    if [ -w "$ES_CFG" ]; then
-        python3 "$py" "$ES_CFG"
-    elif need sudo; then
-        info "need administrator rights to update $ES_CFG"
-        sudo python3 "$py" "$ES_CFG"
-    else
-        warn "cannot write $ES_CFG and sudo is unavailable; skipping registration"
+if [ "$LOCAL_REPO" -eq 1 ]; then
+    LOG="$MODULES/bootstrap.log"
+else
+    if [ -z "$MODULES" ]; then
+        # Prefer the launcher's own Tools card, not the app's eventual target.
+        CARD=$(python3 -B - "$SELF_DIR" <<'PY'
+import os
+from pathlib import Path
+import sys
+mounts = {}
+with open('/proc/mounts') as stream:
+    for line in stream:
+        fields = line.split()
+        if len(fields) >= 4:
+            mounts[fields[1]] = fields[3].split(',')
+own = next((card for card in ('/roms', '/roms2')
+            if sys.argv[1] == card + '/tools' or sys.argv[1].startswith(card + '/tools/')), None)
+for card in dict.fromkeys((own, '/roms2', '/roms')):
+    if card is None:
+        continue
+    path = Path(card)
+    tools = path / 'tools'
+    if (card in mounts and 'ro' not in mounts[card] and not path.is_symlink()
+            and path.is_dir() and os.access(card, os.W_OK | os.X_OK)
+            and not tools.is_symlink()
+            and (not tools.exists() or tools.is_dir() and os.access(tools, os.W_OK | os.X_OK))):
+        print(card)
+        sys.exit(0)
+sys.exit('No writable SD card is actually mounted at /roms or /roms2.')
+PY
+        ) || fail 'No writable mounted Tools card. Insert/remount an SD card at /roms or /roms2.'
+        MODULES="$CARD/tools/227-ai-manager"
     fi
-    rm -f "$py"
-}
+    # Refuse redirected manager storage, including existing deployed managers.
+    python3 -B - "$MODULES" <<'PY' || fail 'Manager storage is not a writable mounted Tools card.'
+import os
+from pathlib import Path
+import sys
+path = Path(sys.argv[1])
+if path not in (Path('/roms/tools/227-ai-manager'), Path('/roms2/tools/227-ai-manager')):
+    sys.exit('Manager must live at <card>/tools/227-ai-manager')
+for part in (path,) + tuple(path.parents):
+    if part.is_symlink():
+        sys.exit('Refusing symlink manager storage: ' + str(part))
+card = path.parents[1]
+with open('/proc/mounts') as stream:
+    mounts = {fields[1]: fields[3].split(',') for fields in map(str.split, stream) if len(fields) >= 4}
+if (str(card) not in mounts or 'ro' in mounts[str(card)]
+        or not os.access(card, os.W_OK | os.X_OK)):
+    sys.exit('Manager card is not mounted and writable')
+for name in ('bootstrap.log', 'install.sh', 'installer_ui.py', 'installer_core.py', 'installer_cli.py'):
+    if (path / name).is_symlink():
+        sys.exit('Refusing symlink manager file: ' + name)
+PY
+    mkdir -p "$MODULES" || fail 'Cannot create manager directory.'
+    LOG="$MODULES/bootstrap.log"
+fi
+: >> "$LOG" || fail "Cannot write $LOG"
+trap '[ -z "$TEMP" ] || rm -rf -- "$TEMP"' EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
-summary() {
-    echo
-    echo "==================================================================="
-    if [ "$DRY_RUN" -eq 1 ]; then
-        echo " Dry run complete - nothing was written."
-        echo "==================================================================="
-        return 0
+if [ "$LOCAL_REPO" -eq 0 ]; then
+    TEMP=$(mktemp -d "$MODULES/.bootstrap.XXXXXX") || fail 'Cannot create bootstrap staging directory.'
+    if [ ! -f "$MODULES/installer_ui.py" ] || [ ! -f "$MODULES/installer_core.py" ] || [ ! -f "$MODULES/installer_cli.py" ]; then
+        command -v curl >/dev/null 2>&1 || fail 'curl is required to download the manager.'
+        RAW=${PROJECT_AI_RAW_BASE:-https://raw.githubusercontent.com/1Z99/project-ai-r36s/main}
+        for name in installer_core.py installer_ui.py installer_cli.py; do
+            printf 'Fetching %s\n' "$name" >> "$LOG"
+            curl --fail --location --silent --show-error --connect-timeout 15 \
+                --speed-time 30 --speed-limit 1024 --max-time 120 \
+                --retry 2 --retry-delay 2 --output "$TEMP/$name" \
+                "${RAW%/}/installer/$name" >> "$LOG" 2>&1 || fail "Cannot download $name. Check Wi-Fi and retry. Log: $LOG"
+        done
+        python3 -B - "$TEMP" <<'PY' >> "$LOG" 2>&1 || fail "Downloaded manager is invalid. Log: $LOG"
+from pathlib import Path
+import sys
+for path in Path(sys.argv[1]).glob('*.py'):
+    data = path.read_bytes()
+    if not data.strip():
+        raise ValueError('Empty manager module: ' + path.name)
+    compile(data, str(path), 'exec')
+PY
+        for name in installer_core.py installer_ui.py installer_cli.py; do
+            mv -f -- "$TEMP/$name" "$MODULES/$name" || fail "Cannot publish $name."
+        done
     fi
-    echo " 227 AI is installed."
-    echo "==================================================================="
-    echo
-    echo " Restart EmulationStation (or reboot) to see the new \"227\" system,"
-    echo " then open it and choose \"227 AI\"."
-    echo
-    echo "  App scripts : $TOOLS/project_ai_r36s.py"
-    echo "  Data        : $ROOT"
-    echo "  System page : $SYSDIR"
-    echo "  Settings    : the R2 button inside the app"
-    echo
-}
+    if [ "$SELF" != "$MODULES/install.sh" ]; then
+        cp -- "$SELF" "$TEMP/install.sh" && chmod 755 "$TEMP/install.sh" && \
+            mv -f -- "$TEMP/install.sh" "$MODULES/install.sh" || fail 'Cannot retain bootstrap.'
+    fi
+    ENTRY="$(dirname -- "$MODULES")/Install 227 AI.sh"
+    [ ! -L "$ENTRY" ] || fail 'Refusing symlink Tools entry.'
+    printf '%s\n' '#!/bin/sh' \
+        'DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)' \
+        'exec sh "$DIR/227-ai-manager/install.sh" "$@"' > "$TEMP/entry.sh"
+    chmod 755 "$TEMP/entry.sh" && mv -f -- "$TEMP/entry.sh" "$ENTRY" || fail 'Cannot publish Tools entry.'
+fi
 
-main() {
-    preflight
-    make_dirs
-    install_runtime
-    install_models
-    install_code
-    install_system
-    install_theme
-    write_config
-    patch_es
-    summary
-}
-
-main "$@"
+if [ "$CLI" -eq 1 ]; then
+    python3 -B "$MODULES/installer_cli.py" "$@"
+else
+    if [ "$DESKTOP" -eq 0 ]; then
+        export SDL_VIDEODRIVER=kmsdrm SDL_RENDER_DRIVER=software
+    fi
+    python3 -B "$MODULES/installer_ui.py" "$@" >> "$LOG" 2>&1 || fail "Graphical manager could not start or stopped unexpectedly. Check SDL2, SDL2_ttf and DejaVu fonts. Log: $LOG"
+fi

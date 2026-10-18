@@ -24,7 +24,7 @@ from urllib.request import Request, urlopen
 
 
 W, H = 640, 480
-ROOT = Path("/roms2/tools/project_ai")
+ROOT = Path(__file__).resolve().parent / "project_ai"
 RUNTIME = ROOT / "runtime"
 MODELS = ROOT / "models"
 CONFIG = ROOT / "config.json"

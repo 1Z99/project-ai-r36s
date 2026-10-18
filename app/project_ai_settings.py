@@ -651,7 +651,7 @@ class SettingsPanel:
                      ("INFERENCE", "llama.cpp / CPU / 3 threads"),
                      ("LOCAL ENDPOINT", "127.0.0.1:39227"),
                      ("CONTEXT / REPLY BUDGET", f"{self.values['context']} / {self.values['max_tokens']} tokens"),
-                     ("DATA DIRECTORY", "/roms2/tools/project_ai"))
+                     ("DATA DIRECTORY", str(app.ROOT)))
             for index, (label, value) in enumerate(facts):
                 y = ROW_Y + index * 42
                 cache.draw(small, label, DETAIL_X, y, app.MUTED)

@@ -18,7 +18,8 @@ gh repo create 1Z99/project-ai-r36s --public --source=. --push
 
 ## 2. Verify the raw URLs
 
-The installer fetches the app, assets, licenses and system files from
+The bootstrap fetches all three `installer/installer_*.py` modules; the manager
+fetches the app, assets, licenses and system files from
 `https://raw.githubusercontent.com/1Z99/project-ai-r36s/main/...`. After the
 push, sanity-check one:
 
@@ -30,7 +31,7 @@ curl -fsSL https://raw.githubusercontent.com/1Z99/project-ai-r36s/main/install.s
 
 The installer downloads the runtime from
 `.../releases/latest/download/project-ai-r36s-runtime-arm64.tar.gz` (plus its
-`.sha256` sidecar), and mirrors the two model files there as a fallback.
+`.sha256` sidecar), and tries the two model mirrors there before Hugging Face.
 
 ```sh
 gh release create v1.0.0 \
@@ -71,8 +72,16 @@ The installer honours development overrides so it can be tested without a
 published release:
 
 ```sh
+mkdir -p /tmp/test/card /tmp/test/themes
+printf '<systemList></systemList>\n' > /tmp/test/es_systems.cfg
 PROJECT_AI_RUNTIME_LOCAL=/path/to/runtime.tar.gz \
 PROJECT_AI_RAW_BASE=file:///path/to/payload \
 PROJECT_AI_REL_BASE=file:///path/to/release \
-sh install.sh --prefix /tmp/test --es-cfg /tmp/test/es_systems.cfg
+sh install.sh --cli --roms /tmp/test/card --action install --yes \
+  --source /path/to/payload --es-cfg /tmp/test/es_systems.cfg --themes /tmp/test/themes
 ```
+
+Use `--dry-run` instead of `--yes` for read-only card discovery/validation.
+The bootstrap uses the local checkout's installer modules without downloading
+them. A local runtime requires its pinned `.sha256` sidecar; include the model
+files at the source root to avoid network downloads.
