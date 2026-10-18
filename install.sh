@@ -88,7 +88,7 @@ WHISPER_SHA="c77c5766f1cef09b6b7d47f21b546cbddd4157886b3b5d6d4f709e91e66c7c2b"
 WHISPER_HF="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/${WHISPER_FILE}"
 
 APP_FILES="project_ai_r36s.py project_ai_settings.py"
-ASSET_FILES="logo.rgba intro-frames.zip intro-background.rgba words.txt 227-art.jpg 227-poster.png 227-theme.xml"
+ASSET_FILES="logo.rgba intro-frames.zip intro-background.rgba words.txt 227-art.jpg 227-poster.png"
 LICENSE_FILES="llama.cpp-MIT.txt whisper.cpp-MIT.txt LFM2.5-Open-License.txt DejaVu-fonts-copyright espeak-ng-NOTICE.txt"
 
 info() { printf '  %s\n' "$*"; }
@@ -326,7 +326,13 @@ install_theme() {
         return 0
     fi
 
-    template="$ROOT/227-theme.xml"
+    template="${TMPDIR:-/tmp}/227-theme.$$.xml"
+    if [ -f "$ROOT/227-theme.xml" ]; then
+        cp -f "$ROOT/227-theme.xml" "$template"
+    elif ! fetch_text "${RAW}/system/227-theme.xml" "$template"; then
+        mv -f "$template" "${template}.part" 2>/dev/null || true
+        template=""
+    fi
     poster="$ROOT/227-poster.png"
     count=0
     for theme in "$THEMES"/*/; do
@@ -334,7 +340,7 @@ install_theme() {
         fmt="$(grep -o 'formatVersion>[0-9]*' "${theme}theme.xml" 2>/dev/null | head -n1 | grep -o '[0-9]*')"
         [ -n "$fmt" ] || fmt=7
         mkdir -p "${theme}227"
-        if [ -f "$template" ]; then
+        if [ -n "$template" ] && [ -f "$template" ]; then
             sed "s|<formatVersion>[0-9]*</formatVersion>|<formatVersion>${fmt}</formatVersion>|" \
                 "$template" > "${theme}227/theme.xml"
         fi
@@ -343,6 +349,7 @@ install_theme() {
         fi
         count=$((count + 1))
     done
+    [ -n "$template" ] && rm -f "$template"
     info "added 227 name + artwork to $count theme(s)"
 }
 
