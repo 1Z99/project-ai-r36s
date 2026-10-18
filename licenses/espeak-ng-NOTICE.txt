@@ -1,0 +1,13 @@
+espeak-ng is used by 227 AI for offline text-to-speech. It is NOT bundled with
+this project; 227 AI loads the library that ships with the device operating
+system (libespeak-ng.so.1).
+
+If your device does not already provide it, install the Debian packages
+`espeak-ng` and `libespeak-ng1` (for example: `sudo apt-get install espeak-ng`).
+
+Upstream: https://github.com/espeak-ng/espeak-ng
+License: GNU General Public License v3.0 (see the distribution's
+/usr/share/doc/libespeak-ng1/copyright and /usr/share/common-licenses/GPL-3).
+Copyright: Jonathan Duddington, Gilles Casse, Ross Bencina, Phil Burk,
+Sun Microsystems, Bill Cox, Nicolas Pitre, The NetBSD Foundation, Reece H. Dunn,
+and other contributors.

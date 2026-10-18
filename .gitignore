@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+
+# Release binaries live on the Releases page, not in the source tree.
+project-ai-r36s-runtime-arm64.tar.gz
+project-ai-r36s-runtime-arm64.tar.gz.sha256
+*.gguf
+*.bin

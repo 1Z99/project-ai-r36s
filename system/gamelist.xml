@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<gameList>
+	<game>
+		<path>./227 AI.sh</path>
+		<name>227 AI</name>
+		<desc>227 AI is a private, offline language model that runs entirely on the R36S. Ask questions, talk with the on-screen keyboard, hear replies read aloud, and dictate with the microphone. No internet, no cloud, no accounts.</desc>
+		<image>./227-art.jpg</image>
+		<developer>1Z99</developer>
+		<publisher>1Z99</publisher>
+		<genre>Artificial Intelligence</genre>
+		<releasedate>20261018T000000</releasedate>
+	</game>
+</gameList>

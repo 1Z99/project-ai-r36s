@@ -1,0 +1,64 @@
+# Credits
+
+227 AI is built by **1Z99** and stands on the shoulders of several excellent
+open-source projects. The components below ship with, or are used by, 227 AI.
+
+## 227 AI application
+
+- **Author / maintainer:** 1Z99
+- **License:** MIT (see [`LICENSE`](LICENSE))
+
+## Inference runtime
+
+- **llama.cpp** — the local LLM inference server bundled in
+  `project_ai_r36s-runtime-arm64.tar.gz` (`runtime/`).
+  - Upstream: https://github.com/ggml-org/llama.cpp
+  - Version: `0.7.0-dev`, build `11669`, commit `620d2225c` (aarch64)
+  - License: MIT — Copyright (c) 2023-2026 The ggml authors
+  - Full text: [`licenses/llama.cpp-MIT.txt`](licenses/llama.cpp-MIT.txt)
+
+- **whisper.cpp** — the speech-to-text engine (`whisper/whisper-cli`).
+  - Upstream: https://github.com/ggml-org/whisper.cpp
+  - License: MIT — Copyright (c) 2023-2026 The ggml authors
+  - Full text: [`licenses/whisper.cpp-MIT.txt`](licenses/whisper.cpp-MIT.txt)
+
+## Models
+
+- **LFM2.5-350M** (`LFM2.5-350M-QAD-Q4_0.gguf`)
+  - Upstream: https://huggingface.co/LiquidAI/LFM2.5-350M-GGUF
+  - Author: Liquid AI, Inc.
+  - License: **LFM Open License v1.0** (redistribution permitted; see terms)
+  - Full text: [`licenses/LFM2.5-Open-License.txt`](licenses/LFM2.5-Open-License.txt)
+
+- **Whisper tiny.en** (`ggml-tiny.en-q5_1.bin`)
+  - Upstream: https://huggingface.co/ggerganov/whisper.cpp
+  - Model: OpenAI Whisper `tiny.en`, converted to GGML by ggml.org
+  - License: MIT (whisper.cpp distribution)
+
+## Supporting libraries
+
+- **SDL2 / SDL2_ttf** — window, input and text rendering. Loaded from the
+  device operating system (`libSDL2`, `libSDL2_ttf`); not bundled with 227 AI.
+  Licensed under the zlib license. https://www.libsdl.org/
+
+- **espeak-ng** — offline text-to-speech. Loaded from the device operating
+  system (`libespeak-ng.so.1`); not bundled with 227 AI.
+  - Upstream: https://github.com/espeak-ng/espeak-ng
+  - License: GNU GPL v3.0
+  - See [`licenses/espeak-ng-NOTICE.txt`](licenses/espeak-ng-NOTICE.txt)
+
+- **DejaVu Sans Mono** fonts — used by the optional PC preview. The R36S app
+  uses the DejaVu fonts that ship with the device.
+  - Upstream: https://dejavu-fonts.github.io/
+  - License: Bitstream Vera / public-domain additions (permissive)
+  - See [`licenses/DejaVu-fonts-copyright`](licenses/DejaVu-fonts-copyright)
+
+## Artwork
+
+- The 227 AI background, logo and cover art were created by **1Z99** and are
+  released under the same MIT license as the application.
+
+---
+
+If you believe your work is used here without proper attribution, please open
+an issue on the repository.
