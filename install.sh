@@ -88,7 +88,7 @@ WHISPER_SHA="c77c5766f1cef09b6b7d47f21b546cbddd4157886b3b5d6d4f709e91e66c7c2b"
 WHISPER_HF="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/${WHISPER_FILE}"
 
 APP_FILES="project_ai_r36s.py project_ai_settings.py"
-ASSET_FILES="logo.rgba intro-frames.zip intro-background.rgba words.txt 227-art.jpg 227-poster.png"
+ASSET_FILES="logo.rgba intro-frames.zip intro-background.rgba words.txt 227-art.jpg"
 LICENSE_FILES="llama.cpp-MIT.txt whisper.cpp-MIT.txt LFM2.5-Open-License.txt DejaVu-fonts-copyright espeak-ng-NOTICE.txt"
 
 info() { printf '  %s\n' "$*"; }
@@ -333,7 +333,7 @@ install_theme() {
         mv -f "$template" "${template}.part" 2>/dev/null || true
         template=""
     fi
-    poster="$ROOT/227-poster.png"
+    poster="$ROOT/227-art.jpg"
     count=0
     for theme in "$THEMES"/*/; do
         [ -f "${theme}theme.xml" ] || continue
@@ -345,7 +345,8 @@ install_theme() {
                 "$template" > "${theme}227/theme.xml"
         fi
         if [ -d "${theme}_art/posters" ] && [ -f "$poster" ]; then
-            cp -f "$poster" "${theme}_art/posters/227.png"
+            cp -f "$poster" "${theme}_art/posters/227.jpg"
+            rm -f "${theme}_art/posters/227.png"
         fi
         count=$((count + 1))
     done

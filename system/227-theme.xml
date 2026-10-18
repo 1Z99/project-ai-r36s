@@ -2,12 +2,11 @@
   <formatVersion>7</formatVersion>
   <include>./../theme.xml</include>
   <view name="basic, detailed, video, grid">
-    <text name="nameLabel" extra="true"><text>227 AI</text></text>
+    <text name="nameLabel" extra="true"><text>227</text></text>
   </view>
   <view name="system">
-    <text name="sys_line1" extra="true"><text>227</text></text>
-    <text name="sys_line2" extra="true"><text>AI</text></text>
-    <text name="shortdescription" extra="true"><text>OFFLINE AI ASSISTANT</text></text>
-    <text name="longdescription" extra="true"><text>Private, offline language model running entirely on the R36S. Ask with the keyboard, dictate with the microphone and hear replies read aloud. No internet, no cloud, no accounts.</text></text>
+    <text name="sys_line2" extra="true"><text>227</text></text>
+    <text name="shortdescription" extra="true"><text>HOMEBREW PROJECTS</text></text>
+    <text name="longdescription" extra="true"><text>227 is a growing collection of homebrew projects and experiments for the R36S.</text></text>
   </view>
 </theme>
