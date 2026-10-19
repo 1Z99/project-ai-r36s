@@ -72,33 +72,67 @@ a silent preview.
 
 ## Install
 
-1. Download **[install227ai.sh from the release](https://github.com/1Z99/project-ai-r36s/releases/download/v1.0.0/install227ai.sh)**. Connect the handheld to Wi-Fi and copy it into a mounted card's
-   `tools/` folder. Mark it executable if launching it directly from Tools.
-2. Run it from Tools, or run `sh install227ai.sh` over SSH. The UI appears on the
-   handheld, not in the SSH terminal. It needs no terminal input.
-3. Select **Main SD / SD1** or **Second SD / SD2** with D-Pad and **A**. Select
-   **INSTALL**, then explicitly confirm. Unmounted/read-only cards are unavailable.
-4. After success, restart EmulationStation (or reboot), then open **227 > 227 AI**.
+### Easy Install (No Commands Needed)
 
-To download the bootstrap over SSH, use the Tools directory on your mounted card:
+1. **Copy the installer to your SD card.** On your computer, download
+   **[install227ai.sh](https://github.com/1Z99/project-ai-r36s/releases/download/v1.0.0/install227ai.sh)**.
+   Turn off the handheld, put the SD card you use for games into your computer,
+   and copy the downloaded file into its **`tools`** folder (alongside the game
+   folders, not inside one). Safely eject the card and put it back in the handheld.
+2. **Connect to Wi-Fi, install, then restart.** Turn on the handheld and connect
+   it to Wi-Fi. In the game menu, open **Tools** and select **install227ai**
+   (it may be shown as **install227ai.sh**). On the installer screen, use the
+   D-Pad and **A** to select the card you want to install on: **Main SD / SD1**
+   or **Second SD / SD2**. Choose **INSTALL**, confirm **Yes**, and wait for
+   success. Only then restart the handheld. Open **227 > 227 AI** to start chatting.
+
+Keep the handheld powered while it installs. Wi-Fi is needed for the downloads;
+once installed, 227 AI works offline. You do not need SSH or terminal commands
+for this method. If you cannot see the card's game folders or `tools` folder on
+your computer, do not format the card; use the SSH method below instead.
+
+### Advanced Install (SSH)
+
+Use this method if you already have SSH enabled on the handheld and want to
+download the installer without removing the SD card. Connect from a terminal
+on your computer, replacing the placeholders with your handheld's username
+and IP address:
 
 ```sh
-cd /roms2/tools && \
+ssh YOUR_USER@YOUR_HANDHELD_IP
+```
+
+Run the following commands in that SSH session. For the **main card / SD1**,
+use `/roms/tools` as shown. For the **second card / SD2**, use `/roms2/tools`
+in both command blocks. Use the card's existing `tools` folder.
+
+```sh
+cd /roms/tools && \
 curl -fL --connect-timeout 15 --max-time 120 -o install227ai.sh.download \
   https://github.com/1Z99/project-ai-r36s/releases/download/v1.0.0/install227ai.sh && \
 mv install227ai.sh.download install227ai.sh && less install227ai.sh
 ```
 
-Use `/roms/tools` instead for the main card. Stop if a command fails. After a
-successful download, inspect the script, quit the viewer, then run:
+Stop if a command fails; do not run an older file after a failed download.
+After a successful download, read the script in the viewer and press **q**
+to close it. If `less` is unavailable, open the downloaded file in a text editor
+before continuing. Then start the installer:
 
 ```sh
-sh /roms2/tools/install227ai.sh
+sh /roms/tools/install227ai.sh
 ```
 
-Use `/roms/tools/install227ai.sh` if you chose the main card. The bootstrap still
-fetches current application source from `main`; the `v1.0.0` asset page hosts the
-runtime and installer downloads, not a frozen copy of the current app. Use
+The installer opens on the **handheld's screen**, not in your SSH terminal.
+Use the D-Pad and **A** to choose **Main SD / SD1** or **Second SD / SD2**,
+choose **INSTALL**, confirm **Yes**, and wait for success. Only then restart
+the handheld and open **227 > 227 AI**. The install card you choose on screen
+can be different from the card holding the downloaded file.
+
+### Installer Details and Maintenance
+
+The bootstrap still fetches current application source from `main`; the
+`v1.0.0` asset page hosts the runtime and installer downloads, not a frozen
+copy of the current app. Use
 `install227ai.sh` for all downloads. The stored manager uses `install.bootstrap`
 internally so EmulationStation does not list its support folder as another tool.
 Use **Tools > Install 227 AI**; nothing inside `227-ai-manager/` needs opening.
