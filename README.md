@@ -9,6 +9,8 @@ This repository contains the app, artwork, licenses and a **graphical deployment
 manager** for installing, updating and removing 227 AI. The app gets a **227**
 system page in EmulationStation so you launch it like a game.
 
+**Unreleased local changes:** automatic dependency setup and content-based update results described below are under device test; published release bootstrap has not yet been refreshed.
+
 [![Animated R36S illustration showing the 227 AI desktop walkthrough](assets/readme/227-ai-demo.gif)](https://github.com/1Z99/project-ai-r36s/releases/download/v1.0.0/227-ai-demo.mp4)
 
 **[Download the installer: install227ai.sh](https://github.com/1Z99/project-ai-r36s/releases/download/v1.0.0/install227ai.sh)**
@@ -53,14 +55,17 @@ a silent preview.
 - A writable, actually mounted **main SD card** (`/roms`) or **second SD card**
   (`/roms2`). Both are detected independently of EmulationStation's ROM layout;
   the graphical manager always requires you to select a destination explicitly.
-- Allow about **650 MB free** on the app's destination card for downloads and
-  staging. A preflight check budgets free space and credits reusable models,
-  runtime and retained partial downloads. Cached downloads also consume space
-  until uninstall.
-- Python **3.9+**, `curl`, `libSDL2`, `libSDL2_ttf`, and the DejaVu Sans Mono font
-  (`/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf`) for the manager.
-- `espeak-ng` / `libespeak-ng.so.1` for speech, and ALSA `arecord` / `aplay` for
-  microphone recording and playback. These are usually present in dArkOSRE.
+- Allow about **650 MiB free** on a fresh app destination for downloads and
+  staging, or about **25 MiB** of additional staging space when the installed
+  runtime and both models verify. These are budgets, not exact install sizes.
+  Preflight also credits retained partial downloads. Cache occupies card space
+  until uninstall; system packages need separate space on the system partition.
+- The manager needs Python **3.9+**, `curl`, `libSDL2` and `libSDL2_ttf`.
+  The local bootstrap can set up missing capabilities on supported firmware as
+  described below. An existing broken or too-old Python fails without upgrading.
+- The app additionally needs `libespeak-ng.so.1` with usable English voice data,
+  ALSA `arecord`, `aplay` and `amixer`, and `pkill` (procps). Regular and bold
+  DejaVu Sans Mono fonts are bundled on the SD card, not a manual OS-font requirement.
 - Internet access for downloads unless all required files are supplied locally.
   The installed app needs no network connection. Optional `dialog` can keep a
   bootstrap failure visible when a usable console is available.
@@ -95,14 +100,16 @@ sh /roms2/tools/install227ai.sh
 
 Use `/roms/tools/install227ai.sh` if you chose the main card. The bootstrap still
 fetches current application source from `main`; the `v1.0.0` asset page hosts the
-runtime and installer downloads, not a frozen copy of the current app. Existing
-`install.sh` links remain as a compatibility entry; use `install227ai.sh` for new
-downloads. The retained manager bootstrap is still named `install.sh` internally
-so installed Tools launchers keep working.
+runtime and installer downloads, not a frozen copy of the current app. Use
+`install227ai.sh` for all downloads. The deployed manager bootstrap is still
+named `install.sh` internally so installed Tools launchers keep working.
 
-The small bootstrap fetches the manager's Python UI, core and CLI modules into
-`<card>/tools/227-ai-manager/`, validates them in temporary files, then publishes
-them with atomic per-file renames. Downloads have finite connection, low-speed
+The local bootstrap fetches four matching manager modules (UI, core, CLI and
+`installer_deps.py`) into `<card>/tools/227-ai-manager/`, validates them in
+temporary files, then publishes
+them with atomic per-file renames. If any module is missing, including the new
+helper, it refreshes the whole four-module set rather than mixing old and new
+modules. A complete stored set is reused. Downloads have finite connection, low-speed
 and overall timeouts. It prefers the Tools card it was launched from; otherwise
 it uses a writable mounted `/roms2`, then `/roms`. **This only chooses manager
 storage, never the app destination.** The manager stays on that Tools card even
@@ -113,6 +120,40 @@ runs the stored manager directly, without an SSH session or terminal chooser.
 The bootstrap sets `SDL_VIDEODRIVER=kmsdrm` and `SDL_RENDER_DRIVER=software` on
 the handheld; `--desktop` leaves the desktop's SDL environment unchanged.
 
+### Automatic dependency setup (local build)
+
+Before Python starts, the shell checks installed Python 3.9+ and `curl`. If
+either tool is absent, it can install only the missing tools and their approved
+dependencies. It never replaces an existing broken or older Python. Before the
+graphical manager opens its SDL display, `installer_deps.py` checks the manager's
+SDL libraries and `curl`. After an explicitly confirmed install/update, the core
+checks all app dependencies too: eSpeak's library and English data, ALSA tools
+and procps. Package names include `libespeak-ng1`, `espeak-ng-data`, `alsa-utils`
+and `procps`. Working capabilities cause **no APT/package-database queries and
+no system changes**; the check is not a general firmware upgrade.
+
+Only missing capabilities trigger OS/architecture and privilege checks. Automatic
+setup requires Debian/Ubuntu-family firmware, `aarch64`, dpkg architecture
+`arm64`, APT, and root or noninteractive `sudo -n`. No password is requested or
+stored. Unsupported systems or missing administrator access produce a clear
+error and missing-package list; this does not promise installation on every
+Linux image or firmware.
+
+APT first simulates a plan with
+`--no-upgrade --no-remove --no-install-recommends`.
+The entire dependency closure is version-pinned and
+simulated again before installation. Upgrades, removals and protected graphics
+or firmware packages, including Mesa/EGL/GLES/GBM/DRM/Mali, are rejected. Package
+indexes are refreshed only if the initial simulation fails. Broken existing
+libraries are errors, not permission to replace the graphics stack.
+
+SHA-256-validated regular/bold fonts and their existing DejaVu license are kept
+in the manager's `fonts/` directory. The manager and app use bundled fonts without
+requiring OS fonts; app fonts live in its data root, with OS fonts as fallback.
+`--desktop`, help, dry-run and uninstall skip automatic dependency setup.
+System packages live outside the app-file rollback and SD staging budget, are
+shared with the OS, and are **kept on uninstall**.
+
 ### Progress and failures
 
 Progress is **per file / task**, with actual transferred bytes, transfer rate,
@@ -120,9 +161,10 @@ elapsed time and file ETA where known. Unknown lengths are indeterminate; there
 is no invented overall download percentage. Failures stay on screen: **A**
 retries/resumes, **X** opens error details, and **B** returns to the menu.
 **B** during work offers a cancellation confirmation; downloaded partials remain.
-Once final publication or removal starts, cancellation is deferred until it is
-safe. Failed updates restore replaced files; a failed rollback reports retained
-backup locations. Do not power off while finalizing.
+Once APT installation, final publication or removal starts, cancellation waits
+until that operation finishes safely. Do not power off during system setup or
+finalization. Failed app-file updates restore replaced files; installed system
+dependencies are not rolled back. A failed rollback reports retained backup locations.
 
 Manager events/errors are saved in `227-ai-manager/installer.log`; bootstrap
 downloads and UI startup errors go to `227-ai-manager/bootstrap.log`. A bootstrap
@@ -160,7 +202,7 @@ exists. This tests **unpushed app/assets/system changes**, not the published
 copies. Use `sh install227ai.sh --desktop` for a PC window, or `--source PATH` to
 select another release tree. Local logs live in `installer/`.
 
-A self-contained manager build can place `install227ai.sh` and the three Python
+A self-contained manager build can place `install227ai.sh` and the four Python
 modules together, with a release tree at `bundle/` beside them. The UI and CLI
 automatically use `bundle/` when present. Include app, assets, licenses and system
 folders; put the runtime archive plus its pinned `.sha256` sidecar and both model
@@ -197,13 +239,13 @@ the independent Tools card where the bootstrap keeps the manager.
 | `$R/tools/project_ai_r36s.py` | The application |
 | `$R/tools/project_ai_settings.py` | Settings panel module |
 | `$T/tools/Install 227 AI.sh` | Self-locating manager launcher |
-| `$T/tools/227-ai-manager/` | Bootstrap, Python manager modules, optional bundle and logs |
+| `$T/tools/227-ai-manager/` | Bootstrap, four Python manager modules, `fonts/`, optional bundle and logs |
 | `$R/227ai/227 AI.sh` | EmulationStation launcher (the "ROM") |
 | `$R/227ai/gamelist.xml` + `227-art.jpg` | System listing and cover art |
 | `$R/tools/project_ai/runtime/` | `llama.cpp` server + libraries |
 | `$R/tools/project_ai/whisper/whisper-cli` | Speech-to-text engine |
 | `$R/tools/project_ai/models/` | LFM 2.5 model + whisper model |
-| `$R/tools/project_ai/logo.rgba`, `intro-*.{zip,rgba}`, `words.txt` | Interface artwork and word list |
+| `$R/tools/project_ai/logo.rgba`, `intro-*.{zip,rgba}`, `words.txt`, `DejaVuSansMono*.ttf` | Interface artwork, word list and bundled regular/bold fonts |
 | `$R/tools/project_ai/config.json` | Your settings (created only if missing) |
 | `$R/tools/project_ai/licenses/` | Third-party license texts |
 | `$R/.227-ai-cache/` | Download cache and temporary staging |
@@ -212,7 +254,8 @@ the independent Tools card where the bootstrap keeps the manager.
 The application finds its own folder at run time, so it works on either card.
 Your chats (`chats.json`) and history (`history.json`) live in
 `$R/tools/project_ai/`. Install and update / repair preserve these and existing
-settings, verify reusable models/runtime, and refresh app/assets/system files.
+settings, verify reusable models/runtime, and compare managed app/assets/system
+files before deciding whether publication is needed.
 Uninstall deletes app data on the selected card, including all conversations.
 The manager and its Tools entry remain. ES has one shared **227** registration;
 installing on another card repoints it there without deleting the other copy.
@@ -292,6 +335,27 @@ Open **Tools > Install 227 AI**, explicitly select the app's card, then choose
 chats. **Uninstall permanently removes the selected card's app, models, settings,
 chat history and cache. Back up `chats.json` / `history.json` first if needed.**
 
+In the local build, a default online install/update resolves GitHub `main` through the
+GitHub API, then stages source files from that **immutable commit**. Even an
+already-current installation needs internet to check the source. API failures
+(including rate limits) and source-fetch failures report an inability to check,
+never a cached "up to date" success. Download cache is not proof of source freshness.
+
+The backend returns `up_to_date` and the UI shows **YOU'RE UP TO DATE** only when
+all managed source files, actual model/runtime hashes, owned EmulationStation
+and theme metadata, required executable permissions and config-file existence
+check out. This skips app-file publication, not checking, staging, cache or log
+activity. ES play statistics and unrelated metadata are preserved; harmless XML
+rewrites do not count as updates. Missing or invalid models/runtime, launchers,
+permissions or registration trigger repair. Differing existing payload bytes are
+reported as **Updated/repaired files**: without a release baseline, they cannot
+reliably distinguish a newer version from corruption. No version baseline is invented.
+
+With `--source` or an automatic local `bundle/`, comparisons use that local tree,
+not GitHub; the UI explicitly identifies a local test bundle. App Update / Repair
+does **not** update the cached manager. Updating the bootstrap and matching four
+manager modules remains a separate manual maintenance task.
+
 For headless removal:
 
 ```sh
@@ -301,6 +365,7 @@ sh install227ai.sh --cli --roms /roms2 --action uninstall --yes
 Only the selected card's ES registration is removed; unrelated systems and a
 registration pointing at another card are preserved. A legacy whole-config
 backup is never restored. The independent manager remains for reinstalling.
+Shared system dependencies are retained as well.
 Restart EmulationStation after installation or removal to refresh its systems.
 
 ---
@@ -309,10 +374,10 @@ Restart EmulationStation after installation or removal to refresh its systems.
 
 ```
 install227ai.sh                          graphical / CLI bootstrap
-install.sh                               compatibility entry for existing links
 installer/installer_ui.py                SDL deployment manager
 installer/installer_core.py              shared install / update / uninstall backend
 installer/installer_cli.py               explicit headless frontend
+installer/installer_deps.py              capability checks and restricted APT setup
 app/project_ai_r36s.py                  application (default model: LFM 2.5)
 app/project_ai_settings.py              settings panel
 assets/                                 logo, intro frames, background, art, fonts
@@ -334,11 +399,14 @@ Python **`3.13.5`**, and a 640 x 480 display. Fresh installation, real model/run
 downloads and checksum checks, update preserving settings/chats, and uninstall
 retaining the manager passed on the main-SD exFAT layout (`/roms`).
 
-The manager at tested source revision `c83568c` is **1.2.0**; the binary asset
+The historical manager at tested source revision `c83568c` is **1.2.0**; the binary asset
 release is **v1.0.0**. Those are separate versions. The **85 automated tests** at
 that app revision cover deployment and manager behavior, not model accuracy or
 performance. A fresh two-card manager installation and other hardware/firmware
 variants are not certified by that single-device run.
+The local bootstrap and manager still report **1.2.0**, not a new 1.3 release.
+The two unreleased changes above are not covered by that historical hardware
+record or test count and remain under device test.
 
 `dev/project_ai_preview.py` renders the interface on a desktop computer for
 development (`dev/prepare_intro_frames.py` rebuilds the intro asset).
@@ -362,8 +430,13 @@ aarch64) plus `whisper.cpp`'s `whisper-cli`, both MIT-licensed.
 
 ## Troubleshooting
 
-- **"missing libespeak-ng.so.1" / no voice** — install espeak-ng:
-  `sudo apt-get install espeak-ng libespeak-ng1`.
+- **Missing dependency / no voice** — the local build checks eSpeak's library
+  and English data during confirmed install/update. Inspect the missing-package
+  list and setup error; automatic setup needs supported APT firmware and root
+  or `sudo -n`. The older published bootstrap still needs manual dependencies.
+- **Cannot verify GitHub main** — check internet access and the error details,
+  including API rate limits, then retry. A cached download cannot prove that the
+  app is current. A local-bundle check only verifies against that local bundle.
 - **No microphone** — dictation needs a **USB** microphone; the internal mic on
   the R36S is not usable. Check `arecord` / `aplay` and R2 > VOICE > TEST MICROPHONE.
 - **The "227" system does not appear** — restart EmulationStation or reboot.

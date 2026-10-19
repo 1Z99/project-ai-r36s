@@ -1928,8 +1928,11 @@ def main():
         return 1
     window = SDL.SDL_CreateWindow(b"Project 227", 0, 0, W, H, 1)
     renderer = SDL.SDL_CreateRenderer(window, -1, 6) if window else None
-    regular_path = b"/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"
-    bold_path = b"/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf"
+    font_dir = (ROOT if all((ROOT / name).is_file() for name in
+                           ("DejaVuSansMono.ttf", "DejaVuSansMono-Bold.ttf"))
+                else Path("/usr/share/fonts/truetype/dejavu"))
+    regular_path = os.fsencode(font_dir / "DejaVuSansMono.ttf")
+    bold_path = os.fsencode(font_dir / "DejaVuSansMono-Bold.ttf")
     title_font = TTF.TTF_OpenFont(bold_path, 16)
     body_font = TTF.TTF_OpenFont(regular_path, 14)
     small_font = TTF.TTF_OpenFont(regular_path, 11)

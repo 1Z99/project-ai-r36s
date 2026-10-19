@@ -47,7 +47,13 @@ def main():
                 log.flush()
             worker.emit = emit
             try:
-                worker.run(args.action)
+                result = worker.run(args.action)
+                summary = json.dumps(result)
+                print('RESULT ' + summary, flush=True)
+                log.write('RESULT ' + summary + '\n')
+                log.flush()
+                print('{}: {} ({})'.format(
+                    args.action.title(), result['detail'], result['source']), flush=True)
             except Exception:
                 traceback.print_exc(file=log)
                 raise

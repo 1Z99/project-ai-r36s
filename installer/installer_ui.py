@@ -68,6 +68,7 @@ class Manager:
         self.started = 0
         self.finished = None
         self.speed = 0
+        self.operation = {}
 
     def emit(self, event):
         self.events.put(event)
@@ -85,12 +86,13 @@ class Manager:
         self.started = time.monotonic()
         self.finished = None
         self.speed = 0
+        self.operation = {}
 
         def work():
             try:
-                self.worker(card["path"], source_dir=self.source,
-                            emit=self.emit, cancel=self.cancel).run(self.action)
-                self.emit(dict(phase="result", result="success"))
+                operation = self.worker(card["path"], source_dir=self.source,
+                                        emit=self.emit, cancel=self.cancel).run(self.action)
+                self.emit(dict(phase="result", result="success", operation=operation or {}))
             except Cancelled as error:
                 self.emit(dict(phase="result", result="cancelled", detail=str(error)))
             except Exception as error:
@@ -111,6 +113,7 @@ class Manager:
                 self.log.flush()
             if event["phase"] == "result":
                 self.state = event["result"]
+                self.operation = event.get("operation", {})
                 self.finished = time.monotonic()
                 self.error = event.get("detail", "")
                 self.details = textwrap.wrap(self.error, 54, replace_whitespace=True) or ["No error details."]
@@ -150,6 +153,7 @@ class Manager:
         elif self.state == "confirm":
             if button == "back":
                 self.state = "home"
+
             elif button in ("left", "right", "up", "down"):
                 self.confirm_yes = not self.confirm_yes
             elif button == "ok":
@@ -187,6 +191,29 @@ class Manager:
                 self.chosen = None
                 self.focus = 0
                 self.state = "home"
+
+    def completion(self):
+        outcome = self.operation.get("outcome")
+        source = self.operation.get("source", "")
+        checked = ("Checked: local test bundle (not GitHub)." if source == "Local bundle" else
+                   "Checked: " + source if source else "")
+        if outcome == "up_to_date":
+            return "YOU'RE UP TO DATE", ["No updates or repairs were needed.",
+                                        "Files, models, runtime and menus verified.",
+                                        checked, "No app files were rewritten."]
+        if self.action == "uninstall":
+            return "UNINSTALL COMPLETE", ["227 AI was removed from the selected card.",
+                                          "The manager remains in Tools for reinstalling."]
+        if outcome in ("updated", "repaired"):
+            title = "REPAIR COMPLETE" if outcome == "repaired" else "UPDATE / REPAIR COMPLETE"
+            return title, ["Missing, changed or damaged items were fixed.",
+                           self.operation.get("detail", ""), checked,
+                           "Your existing settings and chats were kept.",
+                           "Restart ES if its menu or artwork changed."]
+        return "INSTALL COMPLETE", ["227 AI is ready. Microphone testing is built in.",
+                                    checked,
+                                    "Restart ES, then open 227 > 227 AI.",
+                                    "Test your microphone in R2 > VOICE."]
 
 
 class Rect(C.Structure):
@@ -248,9 +275,11 @@ class Display:
                 raise RuntimeError(self.sdl.SDL_GetError().decode())
             base = Path(__file__).resolve().parent
             font_path = next((path for path in (
-                Path(os.environ.get("PROJECT_AI_FONT", "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf")),
+                Path(os.environ.get("PROJECT_AI_FONT", str(base / "fonts/DejaVuSansMono.ttf"))),
+                base / "fonts/DejaVuSansMono.ttf",
                 base / "bundle/assets/DejaVuSansMono.ttf",
                 base.parent / "assets/DejaVuSansMono.ttf",
+                Path("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"),
             ) if path.is_file()), None)
             for label, pixels in (("title", 28), ("body", 18), ("small", 14), ("number", 34)):
                 font = self.ttf.TTF_OpenFont(os.fsencode(font_path), pixels) if font_path else None
@@ -401,17 +430,17 @@ class Display:
             footer = "B cancel safely   Progress is per task / file"
             if model.cancel.is_set():
                 footer = ("Finalizing safely... please do not power off" if event.get("phase") in
-                          ("commit", "rollback", "uninstall", "files", "es", "theme", "config") else
+                          ("commit", "rollback", "uninstall", "files", "es", "theme", "config", "dependencies") else
                           "Stopping safely... partial downloads will be kept")
         else:
             success = model.state == "success"
             cancelled = model.state == "cancelled"
-            self.text("COMPLETE" if success else "STOPPED" if cancelled else "DOWNLOAD / INSTALL FAILED",
+            title, success_lines = model.completion() if success else (None, [])
+            self.text(title if success else "STOPPED" if cancelled else "DOWNLOAD / INSTALL FAILED",
                       20, 90, GREEN if success or cancelled else RED, "title")
             self.text("ELAPSED " + duration((model.finished or time.monotonic()) - model.started), 20, 141, MUTED, "small")
             if success:
-                lines = (["227 AI was removed from the selected card.", "The manager remains in Tools for reinstalling."] if model.action == "uninstall" else
-                         ["227 AI is ready. Microphone testing is built in.", "Restart EmulationStation, then open 227 > 227 AI.", "Test your microphone in R2 > VOICE."])
+                lines = success_lines
             elif cancelled:
                 lines = ["Operation stopped. Downloaded partials are kept.", "Press A to resume, or B to return to the menu."]
             else:
@@ -432,7 +461,7 @@ def main():
     parser = argparse.ArgumentParser(description="227 AI graphical install/update/uninstall manager")
     parser.add_argument("--source", type=Path)
     parser.add_argument("--desktop", action="store_true")
-    parser.add_argument("--demo", choices=("home", "working", "failed", "confirm", "success"))
+    parser.add_argument("--demo", choices=("home", "working", "failed", "confirm", "success", "up-to-date", "updated", "repaired"))
     parser.add_argument("--screenshot", type=Path, help="Write one 640x480 RGBA frame and exit")
     args = parser.parse_args()
     base = Path(__file__).resolve().parent
@@ -446,6 +475,11 @@ def main():
         if args.demo:
             model.state = args.demo
             model.chosen, model.action = 0, "install"
+            if args.demo in ("up-to-date", "updated", "repaired"):
+                model.state, model.action = "success", "update"
+                model.operation = dict(outcome="up_to_date" if args.demo == "up-to-date" else args.demo,
+                                       source="Local bundle", changes=[] if args.demo == "up-to-date" else ["Example managed file"],
+                                       detail="1 changed item(s); Local bundle")
             model.started = time.monotonic() - 82
             model.progress = dict(phase="download", label="Downloading LFM2.5-350M-QAD-Q4_0.gguf",
                                   done=126 * 1024 ** 2, total=214 * 1024 ** 2)

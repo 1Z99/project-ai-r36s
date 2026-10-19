@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import shutil
 import socket
+import sys
 import tarfile
 import tempfile
 import threading
@@ -225,7 +226,24 @@ class InstallerTest(BaseTest):
         self.worker.rel = http.url + "/bundle"
         models = tuple((name, sha, http.url + "/hf/", folder) for name, sha, _, folder in core.MODELS)
         with mock.patch.object(core, "MODELS", models):
-            self.worker.run("install")
+            result = self.worker.run("install")
+            self.assertEqual(result["outcome"], "installed")
+            self.assertEqual(result["source"], "Configured source")
+            self.assertIsNone(result["revision"])
+            http.requests.clear()
+            with mock.patch.object(self.worker, "_commit", side_effect=AssertionError("no-op committed")):
+                self.assertEqual(self.worker.run("update")["outcome"], "up_to_date")
+            expected = {"bundle/" + folder + "/" + name
+                        for folder, names in (("app", core.APP_FILES), ("assets", core.ASSET_FILES),
+                                              ("licenses", core.LICENSE_FILES), ("system", core.SYSTEM_FILES))
+                        for name in names}
+            self.assertEqual({path for path, _ in http.requests}, expected)
+            self.assertTrue(all(offset is None for _, offset in http.requests))
+            http.files["bundle/assets/words.txt"] = b"fresh remote words"
+            result = self.worker.run("update")
+            self.assertEqual(result["outcome"], "updated")
+            self.assertEqual(result["changes"], [str(self.worker.root / "words.txt")])
+            self.assertEqual((self.worker.root / "words.txt").read_bytes(), b"fresh remote words")
         self.assertTrue((self.worker.sysdir / "227 AI.sh").is_file())
         self.assertIn("<name>227</name>", self.es.read_text())
         self.assertFalse(any(path.startswith("hf/") for path, _ in http.requests))
@@ -238,9 +256,304 @@ class InstallerTest(BaseTest):
         self.worker.run("install")
         executable = self.worker.root / "runtime/llama-server"
         executable.write_text("corrupt executable")
-        self.worker.run("update")
+        result = self.worker.run("update")
+        self.assertEqual(result["outcome"], "repaired")
         self.assertEqual(executable.read_bytes(), b"llama")
         self.assertTrue(self.worker._runtime_valid())
+
+    def test_unchanged_runs_skip_commit_and_preserve_all_installed_mtimes(self):
+        self.bundle()
+        result = self.worker.run("install")
+        self.assertEqual(set(result), {"outcome", "source", "revision", "changes", "detail"})
+        self.assertEqual(result["outcome"], "installed")
+        self.assertEqual(result["source"], "Local bundle")
+        self.assertIsNone(result["revision"])
+        (self.worker.root / "config.json").write_text("custom settings, not installer defaults")
+        (self.worker.root / "chats.json").write_text("private chats")
+        # A verified installation needs no archive or model source on recheck.
+        for path in self.worker.source_dir.iterdir():
+            if path.is_file():
+                path.unlink()
+        paths = [self.es] + [p for folder in (self.worker.tools, self.worker.sysdir, self.themes)
+                            for p in folder.rglob("*")]
+        before = {p: (p.stat().st_mode, p.stat().st_mtime_ns,
+                      p.read_bytes() if p.is_file() else None) for p in paths}
+        with mock.patch.object(self.worker, "_commit", side_effect=AssertionError("no-op committed")):
+            for action in ("update", "update", "install"):
+                result = self.worker.run(action)
+                self.assertEqual(result["outcome"], "up_to_date")
+                self.assertEqual(result["changes"], [])
+                self.assertIn("up-to-date", self.events[-1]["label"])
+                self.assertEqual(self.events[-1]["detail"], result["detail"])
+        self.assertEqual(before, {p: (p.stat().st_mode, p.stat().st_mtime_ns,
+                                     p.read_bytes() if p.is_file() else None) for p in paths})
+        self.assertFalse(list(self.worker.cache.glob("stage-*")))
+
+    def test_all_assets_licenses_and_config_are_checked_for_repair(self):
+        self.bundle()
+        self.worker.run("install")
+        targets = [self.worker.root / name for name in core.ASSET_FILES]
+        targets += [self.worker.root / "licenses" / name for name in core.LICENSE_FILES]
+        targets += [self.worker.root / "models/LICENSE-LFM2.5.txt", self.worker.root / "config.json"]
+        for target in targets:
+            with self.subTest(target=target):
+                target.unlink()
+                result = self.worker.run("update")
+                self.assertEqual(result["outcome"], "repaired")
+                self.assertIn(str(target), result["changes"])
+                self.assertTrue(target.is_file())
+                self.assertEqual(self.worker.run("update")["outcome"], "up_to_date")
+
+    def test_missing_execute_permissions_are_repaired(self):
+        self.bundle()
+        self.worker.run("install")
+        for path in (self.worker.sysdir / "227 AI.sh", self.worker.root / "runtime/llama-server",
+                     self.worker.root / "whisper/whisper-cli"):
+            with self.subTest(path=path):
+                path.chmod(0o644)
+                result = self.worker.run("update")
+                self.assertEqual(result["outcome"], "repaired")
+                self.assertTrue(os.access(path, os.X_OK))
+                self.assertEqual(self.worker.run("update")["outcome"], "up_to_date")
+
+    def test_model_and_runtime_manifest_damage_are_repaired_not_reused(self):
+        self.bundle()
+        self.worker.run("install")
+        for name, _, _, folder in core.MODELS:
+            path = self.worker.root / folder / name
+            path.write_text("corrupt model")
+            result = self.worker.run("update")
+            self.assertEqual(result["outcome"], "repaired")
+            self.assertIn(str(path), result["changes"])
+        marker = self.worker.root / ".installer-runtime.json"
+        for content in ("not json", json.dumps({"archive_sha256": core.RUNTIME_SHA, "files": {}})):
+            marker.write_text(content)
+            self.assertEqual(self.worker.run("update")["outcome"], "repaired")
+            self.assertTrue(self.worker._runtime_valid())
+
+    def test_gamelist_semantic_comparison_and_repair_preserve_es_metadata(self):
+        bundle = self.bundle()
+        expected = ET.parse(bundle / "system/gamelist.xml")
+        game = expected.getroot().find("game")
+        for tag, text in (("image", "./227-art.jpg"), ("desc", "A helpful assistant"),
+                          ("developer", "1Z99"), ("genre", "AI")):
+            ET.SubElement(game, tag).text = text
+        expected.write(bundle / "system/gamelist.xml")
+        self.worker.run("install")
+        path = self.worker.sysdir / "gamelist.xml"
+        tree = ET.parse(path)
+        game = tree.getroot().find("game")
+        for tag, text in (("lastplayed", "20261019T100000"), ("playcount", "42"),
+                          ("capturedthumbnail", "./capture.png"), ("favorite", "true")):
+            ET.SubElement(game, tag).text = text
+        game[:] = list(reversed(list(game)))
+        tree.write(path, encoding="utf-8", xml_declaration=True)
+        original = path.read_bytes(), path.stat().st_mtime_ns
+        self.assertEqual(self.worker.run("update")["outcome"], "up_to_date")
+        self.assertEqual((path.read_bytes(), path.stat().st_mtime_ns), original)
+        for tag in ("name", "path", "image", "desc", "developer", "genre"):
+            with self.subTest(tag=tag):
+                tree = ET.parse(path)
+                tree.getroot().find("game/" + tag).text = "stale metadata"
+                tree.write(path)
+                result = self.worker.run("update")
+                self.assertEqual(result["outcome"], "repaired")
+                self.assertIn(str(path), result["changes"])
+                self.assertEqual(ET.parse(path).findtext("game/playcount"), "42")
+                self.assertEqual(ET.parse(path).findtext("game/capturedthumbnail"), "./capture.png")
+        tree = ET.parse(path)
+        legacy = ET.SubElement(tree.getroot(), "game")
+        ET.SubElement(legacy, "path").text = "./MIC TEST.sh"
+        tree.write(path)
+        (self.worker.tools / "mic_test.py").write_text("legacy")
+        (self.worker.sysdir / "MIC TEST.sh").write_text("legacy")
+        self.assertEqual(self.worker.run("update")["outcome"], "repaired")
+        self.assertEqual(len(ET.parse(path).getroot().findall("game")), 1)
+        self.assertEqual(ET.parse(path).findtext("game/playcount"), "42")
+        self.assertFalse((self.worker.tools / "mic_test.py").exists())
+        self.assertFalse((self.worker.sysdir / "MIC TEST.sh").exists())
+        self.assertEqual(self.worker.run("update")["outcome"], "up_to_date")
+
+    def test_es_registration_and_derived_theme_outputs_are_checked(self):
+        self.bundle()
+        self.worker.run("install")
+        self.es.write_text(self.es.read_text().replace(str(self.worker.sysdir), str(self.card / "old")))
+        result = self.worker.run("update")
+        self.assertEqual(result["outcome"], "repaired")
+        self.assertEqual(result["changes"], [str(self.es)])
+        self.theme.joinpath("theme.xml").write_text('<theme><formatVersion>9</formatVersion></theme>')
+        result = self.worker.run("update")
+        self.assertEqual(result["changes"], [str(self.theme / "227/theme.xml")])
+        self.assertIn("<formatVersion>9</formatVersion>", (self.theme / "227/theme.xml").read_text())
+        for target in (self.theme / "227/theme.xml", self.theme / "_art/posters/227.jpg"):
+            target.write_text("stale theme file")
+            self.assertEqual(self.worker.run("update")["outcome"], "repaired")
+        png = self.theme / "_art/posters/227.png"
+        png.write_bytes(b"old PNG")
+        self.assertIn(str(png), self.worker.run("update")["changes"])
+        self.assertFalse(png.exists())
+        self.es.write_text('<systemList>' + self.unrelated + '</systemList>')
+        self.assertIn(str(self.es), self.worker.run("update")["changes"])
+        self.assertEqual(self.worker.run("update")["outcome"], "up_to_date")
+
+    def test_changed_source_updates_only_changed_outputs(self):
+        bundle = self.bundle()
+        self.worker.run("install")
+        paths = [self.es] + [p for folder in (self.worker.tools, self.worker.sysdir, self.themes)
+                            for p in folder.rglob("*") if p.is_file()]
+        before = {p: (p.read_bytes(), p.stat().st_mode, p.stat().st_mtime_ns) for p in paths}
+        changed = {self.worker.tools / core.APP_FILES[0], self.worker.root / "words.txt"}
+        (bundle / "app" / core.APP_FILES[0]).write_text("# new source payload\n")
+        (bundle / "assets/words.txt").write_text("new source words\n")
+        result = self.worker.run("update")
+        self.assertEqual(result["outcome"], "updated")
+        self.assertEqual(set(result["changes"]), {str(p) for p in changed})
+        self.assertIn("Updated / repaired", self.events[-1]["label"])
+        for path, snapshot in before.items():
+            if path not in changed:
+                self.assertEqual((path.read_bytes(), path.stat().st_mode, path.stat().st_mtime_ns), snapshot)
+        self.assertEqual(self.worker.run("update")["outcome"], "up_to_date")
+
+    def test_comparison_errors_never_report_up_to_date(self):
+        self.bundle()
+        self.worker.run("install")
+        self.events.clear()
+        compare = self.worker._file_matches
+
+        def fail_comparison(source, target):
+            if target == self.worker.root / "words.txt":
+                raise OSError("comparison read failed")
+            return compare(source, target)
+
+        with mock.patch.object(self.worker, "_file_matches", side_effect=fail_comparison):
+            with self.assertRaisesRegex(OSError, "comparison read failed"):
+                self.worker.run("update")
+        self.assertEqual(self.events[-1]["phase"], "error")
+        self.assertFalse(any(event["phase"] == "complete" for event in self.events))
+
+    def test_invalid_installed_xml_aborts_without_publishing(self):
+        self.bundle()
+        self.worker.run("install")
+        for target in (self.worker.sysdir / "gamelist.xml", self.es):
+            with self.subTest(target=target):
+                original = target.read_bytes()
+                target.write_text("<invalid XML")
+                self.events.clear()
+                with mock.patch.object(self.worker, "_commit", side_effect=AssertionError("invalid comparison committed")):
+                    with self.assertRaises(ET.ParseError):
+                        self.worker.run("update")
+                self.assertFalse(any(event["phase"] == "complete" for event in self.events))
+                self.assertEqual(target.read_text(), "<invalid XML")
+                target.write_bytes(original)
+
+    def test_configured_source_failure_never_reuses_cached_small_files(self):
+        bundle = self.bundle()
+        self.worker.run("install")
+        self.worker.source_dir = None
+        self.worker.raw = "https://configured.invalid/bundle"
+        self.events.clear()
+        cached = self.worker.cache / "bundle/app" / core.APP_FILES[0]
+        cached.parent.mkdir(parents=True)
+        cached.write_bytes((bundle / "app" / core.APP_FILES[0]).read_bytes())
+        with mock.patch.object(self.worker, "_download", side_effect=RuntimeError("source unavailable")) as download:
+            with self.assertRaisesRegex(RuntimeError, "source unavailable"):
+                self.worker.run("update")
+        self.assertEqual(download.call_args.args[1], None)
+        self.assertEqual(download.call_args.args[2], [self.worker.raw + "/app/" + core.APP_FILES[0]])
+        self.assertFalse(any(event["phase"] == "complete" for event in self.events))
+
+    def test_dependencies_only_repair_does_not_commit_app_files(self):
+        self.bundle()
+        self.worker.run("install")
+        with mock.patch.object(self.worker, "_dependencies", return_value={"installed": ["espeak-ng"]}), \
+                mock.patch.object(self.worker, "_commit", side_effect=AssertionError("unneeded app commit")):
+            result = self.worker.run("update")
+        self.assertEqual(result["outcome"], "repaired")
+        self.assertEqual(result["changes"], ["System dependencies: espeak-ng"])
+
+    def test_dependencies_use_literal_real_card_paths_and_return_status(self):
+        deps = mock.Mock()
+        deps.DependencyCancelled = type("DependencyCancelled", (Exception,), {})
+        deps.ensure.return_value = {"installed": ["espeak-ng"]}
+        with mock.patch.dict(sys.modules, installer_deps=deps), \
+                mock.patch.object(core, "CARD_PATHS", ((self.card, "mock card"),)):
+            self.assertEqual(self.worker._dependencies(), {"installed": []})
+            deps.ensure.assert_not_called()
+            for prefix in (Path("/roms"), Path("/roms2")):
+                worker = core.Installer(prefix, es_cfg=self.es, themes=self.themes)
+                self.assertEqual(worker._dependencies(), {"installed": ["espeak-ng"]})
+                self.assertEqual(deps.ensure.call_args.args, ("all",))
+                deps.ensure.call_args.kwargs["emit"]({"phase": "dependencies", "label": "test"})
+            deps.ensure.side_effect = deps.DependencyCancelled("cancelled dependencies")
+            with self.assertRaisesRegex(core.Cancelled, "cancelled dependencies"):
+                worker._dependencies()
+
+    def test_default_github_source_resolves_fresh_immutable_revision_each_run(self):
+        bundle = self.bundle()
+        self.worker.run("install")
+        self.worker.source_dir = None
+        self.worker.raw = core.RAW
+        sha = "a" * 40
+        requests = []
+
+        def download(dest, checksum, urls):
+            requests.append((checksum, urls))
+            self.assertIsNone(checksum)
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            if urls == ["https://api.github.com/repos/1Z99/project-ai-r36s/commits/main"]:
+                dest.write_text(json.dumps({"sha": sha}))
+            else:
+                immutable = core.RAW.rsplit("/", 1)[0] + "/" + sha + "/"
+                self.assertTrue(urls[0].startswith(immutable), urls)
+                dest.write_bytes((bundle / unquote(urls[0][len(immutable):])).read_bytes())
+            return dest
+
+        with mock.patch.object(self.worker, "_download", side_effect=download):
+            for sha in ("a" * 40, "b" * 40):
+                result = self.worker.run("update")
+                self.assertEqual(result["outcome"], "up_to_date")
+                self.assertEqual(result["source"], "GitHub " + sha[:7])
+                self.assertEqual(result["revision"], sha)
+                self.assertEqual(self.worker.raw, core.RAW)
+            sha = "c" * 40
+            (bundle / "app" / core.APP_FILES[0]).write_text("# changed remote source\n")
+            result = self.worker.run("update")
+            self.assertEqual(result["outcome"], "updated")
+            self.assertEqual(result["revision"], sha)
+            self.assertEqual(result["changes"], [str(self.worker.tools / core.APP_FILES[0])])
+        self.assertEqual(self.worker.raw, core.RAW)
+        self.assertEqual(sum("api.github.com" in urls[0] for _, urls in requests), 3)
+
+    def test_github_check_failure_or_invalid_response_cannot_use_cached_success(self):
+        self.bundle()
+        self.worker.run("install")
+        self.worker.source_dir = None
+        self.worker.raw = core.RAW
+        metadata = self.worker.cache / "github-main.json"
+        for response in (RuntimeError("GitHub rate limit / network failure"), "not JSON", "{}",
+                         '{"sha": "main"}', '{"sha": null}'):
+            with self.subTest(response=response):
+                metadata.write_text(json.dumps({"sha": "a" * 40}))
+                self.events.clear()
+
+                def download(dest, checksum, urls):
+                    self.assertIsNone(checksum)
+                    if isinstance(response, Exception):
+                        raise response
+                    dest.write_text(response)
+                    return dest
+
+                with mock.patch.object(self.worker, "_download", side_effect=download):
+                    with self.assertRaisesRegex(RuntimeError, "Cannot verify GitHub main"):
+                        self.worker.run("update")
+                self.assertEqual(self.worker.raw, core.RAW)
+                self.assertFalse(any(event["phase"] == "complete" for event in self.events))
+
+    def test_up_to_date_check_does_not_require_fresh_install_space(self):
+        self.bundle()
+        self.worker.run("install")
+        with mock.patch.object(core.shutil, "disk_usage", return_value=mock.Mock(free=25 * core.MIB)):
+            self.assertEqual(self.worker.run("update")["outcome"], "up_to_date")
 
     def test_install_update_uninstall_preserves_user_and_manager(self):
         bundle = self.bundle()
@@ -283,7 +596,9 @@ class InstallerTest(BaseTest):
         self.assertEqual(mtimes, {p: Path(p).stat().st_mtime_ns for p in mtimes})
         # A stale shell-installer backup must never be restored.
         self.es.with_suffix(".cfg.pre-227ai").write_text("not an ES config")
-        self.worker.run("uninstall")
+        result = self.worker.run("uninstall")
+        self.assertEqual(result["outcome"], "uninstalled")
+        self.assertIn(str(self.worker.root), result["changes"])
         self.assertFalse(self.worker.root.exists())
         self.assertFalse(self.worker.sysdir.exists())
         self.assertEqual(manager.read_text(), "manager unchanged")
@@ -649,7 +964,7 @@ class InstallerTest(BaseTest):
             shutil.copyfile(bundle / name, self.worker.cache / name)
             model_credit += (bundle / name).stat().st_size
         runtime_credit = min(29 * core.MIB, (bundle / core.RUNTIME).stat().st_size)
-        needed = 650 * core.MIB - 104 * core.MIB - model_credit
+        needed = 25 * core.MIB
         with mock.patch.object(core.shutil, "disk_usage", return_value=mock.Mock(free=needed)):
             self.worker.run("update")
         space = [e for e in self.events if e["label"] == "Free space checked"][-1]

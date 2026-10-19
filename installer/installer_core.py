@@ -38,7 +38,7 @@ MODEL_SIZES = {"LFM2.5-350M-QAD-Q4_0.gguf": 219312832,
 MIB = 1024 * 1024
 APP_FILES = ("project_ai_r36s.py", "project_ai_settings.py")
 ASSET_FILES = ("logo.rgba", "intro-frames.zip", "intro-background.rgba",
-               "words.txt", "227-art.jpg")
+                "words.txt", "227-art.jpg", "DejaVuSansMono.ttf", "DejaVuSansMono-Bold.ttf")
 LICENSE_FILES = ("llama.cpp-MIT.txt", "whisper.cpp-MIT.txt",
                  "LFM2.5-Open-License.txt", "DejaVu-fonts-copyright", "espeak-ng-NOTICE.txt")
 SYSTEM_FILES = ("227 AI.sh", "gamelist.xml", "227-theme.xml")
@@ -214,6 +214,8 @@ class Installer:
     def _copy(self, source, target, phase="files"):
         self._check()
         _no_symlinks(target)
+        if self._file_matches(source, target):
+            return
         self._mkdir(target.parent)
         fd, temporary = tempfile.mkstemp(prefix=".227-", dir=str(target.parent))
         temporary = Path(temporary)
@@ -240,6 +242,17 @@ class Installer:
         finally:
             if temporary.exists():
                 temporary.unlink()
+
+    def _file_matches(self, source, target):
+        self._check()
+        _no_symlinks(target)
+        if not target.exists():
+            return False
+        if not target.is_file():
+            raise ValueError("Expected managed file: {}".format(target))
+        return (source.stat().st_size == target.stat().st_size
+                and self._hash(source) == self._hash(target)
+                and (target.suffix != ".sh" or os.access(target, os.X_OK)))
 
     @staticmethod
     def _response(headers):
@@ -399,6 +412,8 @@ class Installer:
         # The old release has a second microphone launcher. Publish only 227 AI.
         gamelist = stage / "system/gamelist.xml"
         tree = ET.parse(str(gamelist))
+        if tree.getroot().tag != "gameList":
+            raise ValueError("Bundle must contain a gameList")
         for game in list(tree.getroot()):
             if game.tag != "game" or game.findtext("path") != "./227 AI.sh":
                 tree.getroot().remove(game)
@@ -406,6 +421,46 @@ class Installer:
             raise ValueError("Bundle must contain exactly one 227 AI gamelist entry")
         tree.write(str(gamelist), encoding="utf-8", xml_declaration=True)
         ET.parse(str(stage / "system/227-theme.xml"))
+
+    def _gamelist_text(self, source):
+        """Compare owned fields, keeping ES statistics and unrelated metadata."""
+        self._check()
+        target = self.sysdir / "gamelist.xml"
+        _no_symlinks(target)
+        expected = ET.parse(str(source)).getroot().find("game")
+        if not target.exists():
+            return source.read_text(encoding="utf-8")
+        original = target.read_text(encoding="utf-8")
+        root = ET.fromstring(original)
+        if root.tag != "gameList":
+            raise ValueError("Invalid gamelist: {}".format(target))
+
+        def value(element):
+            return (element.tag, tuple(sorted(element.attrib.items())),
+                    (element.text or "").strip(), tuple(sorted(value(child) for child in element)))
+
+        games = root.findall("game")
+        game = next((item for item in games
+                     if (item.findtext("path") or "").strip() == expected.findtext("path")), None)
+        if game is None:
+            game = next((item for item in games
+                         if (item.findtext("name") or "").strip() == expected.findtext("name")), None)
+        if game is None and len(games) == 1 and games[0].findtext("path") != "./MIC TEST.sh":
+            game = games[0]
+        changed = len(games) != 1 or game is None
+        if game is None:
+            game = ET.SubElement(root, "game")
+        for item in games:
+            if item is not game:
+                root.remove(item)
+        for field in expected:
+            actual = game.findall(field.tag)
+            if len(actual) != 1 or value(actual[0]) != value(field):
+                changed = True
+                for item in actual:
+                    game.remove(item)
+                game.append(ET.fromstring(ET.tostring(field, encoding="unicode")))
+        return ET.tostring(root, encoding="unicode") + "\n" if changed else original
 
     def _runtime_valid(self):
         marker = self.root / ".installer-runtime.json"
@@ -544,7 +599,10 @@ class Installer:
         return text
 
     def _write_text(self, target, text, phase):
+        self._check()
         _no_symlinks(target)
+        if target.exists() and target.read_bytes() == text.encode("utf-8"):
+            return
         self._mkdir(target.parent)
         fd, name = tempfile.mkstemp(prefix=".227-", dir=str(target.parent))
         try:
@@ -573,6 +631,7 @@ class Installer:
             for path, _ in CARD_PATHS:
                 if path != self.prefix and (path / "tools/project_ai_r36s.py").is_file():
                     return
+        removed = []
         for theme in sorted(self.themes.iterdir()):
             self._check()
             if theme.is_symlink() or not theme.is_dir() or not (theme / "theme.xml").is_file():
@@ -590,25 +649,86 @@ class Installer:
             if verify:
                 continue
             if remove:
+                removed.extend(str(path) for path in
+                               (target / "theme.xml", poster, poster.with_suffix(".png")) if path.exists())
                 (target / "theme.xml").unlink(missing_ok=True)
                 if target.is_dir() and not any(target.iterdir()):
                     target.rmdir()
                 poster.unlink(missing_ok=True)
                 poster.with_suffix(".png").unlink(missing_ok=True)
                 continue
-            template = (self.root / "227-theme.xml").read_text(encoding="utf-8")
-            # Stock ES themes may put comments before an XML declaration; ES
-            # accepts these although ElementTree does not. Never rewrite them.
-            metadata = (theme / "theme.xml").read_text(encoding="utf-8", errors="replace")
-            metadata = re.sub(r"<!--.*?-->", "", metadata, flags=re.S)
-            match = re.search(r"<formatVersion>\s*(\d+)\s*</formatVersion>", metadata)
-            version = match[1] if match else "7"
-            template = re.sub(r"<formatVersion>\d+</formatVersion>",
-                              lambda m: "<formatVersion>" + escape(version) + "</formatVersion>", template)
+            template = self._theme_template(theme, self.root / "227-theme.xml")
             self._write_text(target / "theme.xml", template, "theme")
             if poster.parent.is_dir():
                 self._copy(self.root / "227-art.jpg", poster, "theme")
                 self._remove(poster.with_suffix(".png"))
+        return removed
+
+    @staticmethod
+    def _theme_template(theme, source):
+        template = source.read_text(encoding="utf-8")
+        # ES accepts comments before XML declarations; leave stock files alone.
+        metadata = (theme / "theme.xml").read_text(encoding="utf-8", errors="replace")
+        metadata = re.sub(r"<!--.*?-->", "", metadata, flags=re.S)
+        match = re.search(r"<formatVersion>\s*(\d+)\s*</formatVersion>", metadata)
+        version = match[1] if match else "7"
+        return re.sub(r"<formatVersion>\d+</formatVersion>",
+                      lambda m: "<formatVersion>" + version + "</formatVersion>", template)
+
+    def _pending_changes(self, stage, runtime, models):
+        self._event("check", "Comparing installed files", "Checking payload, settings, ES and themes")
+        changes = []
+        payload_changed = False
+        files = []
+        for folder, names, dest in (("app", APP_FILES, self.tools),
+                                   ("assets", ASSET_FILES, self.root),
+                                   ("licenses", LICENSE_FILES, self.root / "licenses")):
+            files.extend((stage / folder / name, dest / name) for name in names)
+        files.extend(((stage / "system/227-theme.xml", self.root / "227-theme.xml"),
+                      (stage / "system/227 AI.sh", self.sysdir / "227 AI.sh"),
+                      (stage / "assets/227-art.jpg", self.sysdir / "227-art.jpg"),
+                      (stage / "licenses/LFM2.5-Open-License.txt",
+                       self.root / "models/LICENSE-LFM2.5.txt")))
+        for source, target in files:
+            if not self._file_matches(source, target):
+                changes.append(str(target))
+                # No release baseline exists: differing bytes can also be damage.
+                if target.is_file() and self._hash(source) != self._hash(target):
+                    payload_changed = True
+        if runtime:
+            changes.extend(str(self.root / name) for name in ("runtime", "whisper"))
+            marker = self.root / ".installer-runtime.json"
+            if not self._file_matches(stage / "runtime-tree/.installer-runtime.json", marker):
+                changes.append(str(marker))
+        changes.extend(str(target) for _, target in models)
+        config = self.root / "config.json"
+        if not config.exists():
+            changes.append(str(config))
+        elif not config.is_file():
+            raise ValueError("Expected settings file: {}".format(config))
+        for target in (self.tools / "mic_test.py", self.sysdir / "MIC TEST.sh"):
+            if target.exists():
+                changes.append(str(target))
+        texts = [(self.sysdir / "gamelist.xml", self._gamelist_text(stage / "system/gamelist.xml")),
+                 (self.es_cfg, self._es_text())]
+        if self.themes is not None and self.themes.is_dir():
+            for theme in sorted(self.themes.iterdir()):
+                self._check()
+                if theme.is_symlink() or not theme.is_dir() or not (theme / "theme.xml").is_file():
+                    continue
+                texts.append((theme / "227/theme.xml", self._theme_template(theme, stage / "system/227-theme.xml")))
+                poster = theme / "_art/posters/227.jpg"
+                if poster.parent.is_dir():
+                    if not self._file_matches(stage / "assets/227-art.jpg", poster):
+                        changes.append(str(poster))
+                    if poster.with_suffix(".png").exists():
+                        changes.append(str(poster.with_suffix(".png")))
+        for target, text in texts:
+            self._check()
+            _no_symlinks(target)
+            if not target.exists() or target.read_bytes() != text.encode("utf-8"):
+                changes.append(str(target))
+        return changes, payload_changed
 
     def _mkdir(self, path):
         if self._journal is not None and not path.exists():
@@ -721,6 +841,10 @@ class Installer:
         # Fresh budget: app staging ~15 MiB, runtime 75 + 29 MiB,
         # models ~240 MiB, plus conservative filesystem/retry headroom.
         needed = 650 * MIB - allowance
+        if runtime and len(installed) == len(MODELS):
+            # Only small payload/cache staging remains; a no-op needs no large
+            # download/extraction or rollback reserve.
+            needed = min(needed, 25 * MIB)
         free = shutil.disk_usage(self.prefix).free
         detail = "Need {:.1f} MiB free; {:.1f} MiB available on {}".format(
             needed / MIB, free / MIB, self.prefix)
@@ -728,6 +852,17 @@ class Installer:
             raise OSError("Not enough free space. " + detail + ". Free space or retry with retained downloads.")
         self._event("space", "Free space checked", detail, free, needed)
         return runtime, installed
+
+    def _dependencies(self):
+        # System packages are outside the app-file transaction. Only actual
+        # handheld installs may request them, never isolated desktop fixtures.
+        if self.prefix not in (Path("/roms"), Path("/roms2")):
+            return {"installed": []}
+        from installer_deps import DependencyCancelled, ensure
+        try:
+            return ensure("all", emit=lambda event: self._event(**event), cancel=self.cancel)
+        except DependencyCancelled as error:
+            raise Cancelled(str(error)) from error
 
     def _commit(self, stage, runtime, models):
         for folder in (self.tools, self.root, self.root / "licenses", self.sysdir):
@@ -758,7 +893,7 @@ class Installer:
         self._remove(self.tools / "mic_test.py")
         self._remove(self.sysdir / "MIC TEST.sh")
         self._copy(self.root / "227-art.jpg", self.sysdir / "227-art.jpg")
-        self._copy(stage / "system/gamelist.xml", self.sysdir / "gamelist.xml")
+        self._write_text(self.sysdir / "gamelist.xml", self._gamelist_text(stage / "system/gamelist.xml"), "files")
         self._themes()
         # Last: publish a usable launcher, then make ES aware of it.
         self._copy(stage / "system/227 AI.sh", self.sysdir / "227 AI.sh")
@@ -771,12 +906,20 @@ class Installer:
         lock prevents concurrent runs; shared ES/theme changes use a second lock.
         Cancellation is honored before publication/deletion, then deferred until
         the entire commit, rollback, or destructive uninstall has finished.
-        No sudo, service restart, prompt, sys.exit, or manager self-update occurs.
+        System dependency setup may elevate only safe package operations on
+        supported handhelds. No service restart, prompt or manager self-update.
+        Returns outcome, source, revision, changes (at most 40 paths), and detail.
+        Without a release baseline, 'updated' means differing existing payload
+        bytes; missing files and integrity/registration fixes are 'repaired'.
         """
         if action not in ("install", "update", "uninstall"):
             raise ValueError("Unknown installer action: {}".format(action))
         self._started = time.monotonic()
         stage = None
+        base_raw = self.raw
+        source = "Local bundle" if self.source_dir is not None else "Configured source"
+        revision = None
+        changes = []
         try:
             self._check()
             self.validate_card()
@@ -789,8 +932,26 @@ class Installer:
                     raise RuntimeError("Another installer is already modifying {}".format(self.prefix))
                 self._event("prepare", action.title() + " 227 AI", str(self.prefix))
                 if action != "uninstall":
+                    existed = any(path.exists() for path in
+                                  (self.tools / APP_FILES[0], self.root, self.sysdir))
+                    dependencies = self._dependencies()
                     verified_runtime, installed_models = self._preflight()
                     self.cache.mkdir(exist_ok=True)
+                    if self.source_dir is None and base_raw == RAW:
+                        self._event("check", "Checking GitHub main", "Resolving an immutable source revision")
+                        try:
+                            metadata = self._download(self.cache / "github-main.json", None,
+                                                      ["https://api.github.com/repos/1Z99/project-ai-r36s/commits/main"])
+                            revision = json.loads(metadata.read_text(encoding="utf-8"))["sha"]
+                            if not isinstance(revision, str) or not re.fullmatch(r"[0-9a-fA-F]{40}", revision):
+                                raise ValueError("Invalid commit SHA")
+                        except Cancelled:
+                            raise
+                        except Exception as error:
+                            raise RuntimeError("Cannot verify GitHub main: {}".format(error)) from error
+                        revision = revision.lower()
+                        self.raw = base_raw.rsplit("/", 1)[0] + "/" + revision
+                        source = "GitHub " + revision[:7]
                     stage = Path(tempfile.mkdtemp(prefix="stage-", dir=str(self.cache)))
                     self._stage_files(stage)
                     runtime = self._stage_runtime(stage, verified_runtime)
@@ -801,8 +962,8 @@ class Installer:
                             self._event("files", "Keeping verified model", str(target))
                             continue
                         urls = self._model_urls(name, hf)
-                        source = self._download(self.cache / name, sha, urls)
-                        models.append((source, target))
+                        model_source = self._download(self.cache / name, sha, urls)
+                        models.append((model_source, target))
                 es_lockpath = self.es_cfg.with_name(self.es_cfg.name + ".227-ai.lock")
                 _no_symlinks(es_lockpath)
                 with es_lockpath.open("a+b") as es_lock:
@@ -817,24 +978,42 @@ class Installer:
                     self._es_text(remove=action == "uninstall")
                     self._themes(remove=action == "uninstall", verify=True)
                     self._check()
+                    if action != "uninstall":
+                        file_changes, payload_changed = self._pending_changes(stage, runtime, models)
+                        changes = list(file_changes)
+                        installed_deps = (dependencies or {}).get("installed", [])
+                        if installed_deps:
+                            changes.insert(0, "System dependencies: " + ", ".join(installed_deps))
+                        outcome = ("up_to_date" if not changes else "installed" if not existed else
+                                   "updated" if payload_changed else "repaired")
+                    else:
+                        outcome = "uninstalled"
+                    self._check()
                     self._cancel_reported = False
-                    self._finalizing = "uninstall" if action == "uninstall" else "commit"
-                    self._event(self._finalizing, "Finalizing uninstall" if action == "uninstall" else
-                                "Committing installation", "Cancellation is deferred until this phase finishes")
+                    if action == "uninstall" or file_changes:
+                        self._finalizing = "uninstall" if action == "uninstall" else "commit"
+                        self._event(self._finalizing, "Finalizing uninstall" if action == "uninstall" else
+                                    "Committing installation", "Cancellation is deferred until this phase finishes")
                     if action == "uninstall":
                         # Never restore a whole backup or touch tools/227-ai-manager.
-                        self._write_text(self.es_cfg, self._es_text(remove=True), "es")
+                        text = self._es_text(remove=True)
+                        if self.es_cfg.read_bytes() != text.encode("utf-8"):
+                            changes.append(str(self.es_cfg))
+                        self._write_text(self.es_cfg, text, "es")
                         for name in APP_FILES + ("mic_test.py",):
                             self._check()
+                            if (self.tools / name).exists():
+                                changes.append(str(self.tools / name))
                             (self.tools / name).unlink(missing_ok=True)
                             self._event("files", "Removed " + name)
                         for target in (self.root, self.sysdir, self.cache):
                             self._check()
                             if target.exists():
+                                changes.append(str(target))
                                 shutil.rmtree(str(target))
                             self._event("files", "Removed app data", str(target))
-                        self._themes(remove=True)
-                    else:
+                        changes.extend(self._themes(remove=True) or [])
+                    elif file_changes:
                         self._journal = []
                         try:
                             self._commit(stage, runtime, models)
@@ -847,8 +1026,15 @@ class Installer:
                         else:
                             self._end_transaction()
                     self._check()
-                self._event("complete", "227 AI " + ("uninstalled" if action == "uninstall" else "installed"),
-                            "Restart EmulationStation to refresh its systems", 1, 1, overall=1.0)
+                labels = dict(installed="227 AI installed", updated="227 AI: Updated / repaired files",
+                              repaired="227 AI repaired", up_to_date="227 AI is up-to-date",
+                              uninstalled="227 AI uninstalled")
+                detail = ("Verified installed files match {}".format(source) if outcome == "up_to_date" else
+                          "{} changed item(s); {}".format(len(changes), source))
+                result = dict(outcome=outcome, source=source, revision=revision,
+                              changes=changes[:40], detail=detail)
+                self._event("complete", labels[outcome], detail, 1, 1, overall=1.0)
+                return result
         except Cancelled as error:
             self._event("cancelled", "Cancelled", str(error))
             raise
@@ -856,6 +1042,7 @@ class Installer:
             self._event("error", "Installer failed", str(error))
             raise
         finally:
+            self.raw = base_raw
             self._finalizing = None
             if stage is not None:
                 shutil.rmtree(str(stage), ignore_errors=True)

@@ -124,6 +124,60 @@ class ManagerTest(unittest.TestCase):
         self.assertEqual(ui.size(None), "--")
         ast.parse(Path(ui.__file__).read_text(), feature_version=(3, 9))
 
+    def test_up_to_date_result_is_preserved_and_names_checked_source(self):
+        result = dict(outcome="up_to_date", source="Local bundle", revision=None,
+                      changes=[], detail="Verified installed files match Local bundle")
+
+        class CurrentWorker:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            def run(self, action):
+                return result
+
+        self.model.worker = CurrentWorker
+        self.model.chosen, self.model.action = 0, "update"
+        self.model.start()
+        self.model.thread.join(timeout=2)
+        self.model.update()
+        self.assertEqual(self.model.state, "success")
+        self.assertEqual(self.model.operation, result)
+        title, lines = self.model.completion()
+        self.assertEqual(title, "YOU'RE UP TO DATE")
+        self.assertIn("local test bundle (not GitHub)", " ".join(lines))
+        self.assertFalse(any("Restart" in line for line in lines))
+        with patch.object(self.model, "start") as start, patch.object(ui, "discover_cards", return_value=self.cards):
+            self.model.button("ok")
+        self.assertEqual(self.model.state, "home")
+        start.assert_not_called()
+
+    def test_update_and_repair_do_not_display_up_to_date(self):
+        for outcome in ("updated", "repaired"):
+            self.model.action = "update"
+            self.model.operation = dict(outcome=outcome, source="GitHub 1234567",
+                                        changes=["model"], detail="1 changed item(s)")
+            title, lines = self.model.completion()
+            self.assertNotEqual(title, "YOU'RE UP TO DATE")
+            self.assertIn("GitHub 1234567", " ".join(lines))
+            self.assertIn("1 changed item(s)", lines)
+
+    def test_retry_clears_previous_completion_report(self):
+        class OfflineWorker:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            def run(self, action):
+                raise RuntimeError("offline")
+
+        self.model.operation = {"outcome": "up_to_date"}
+        self.model.worker = OfflineWorker
+        self.model.chosen, self.model.action = 0, "update"
+        self.model.start()
+        self.model.thread.join(timeout=2)
+        self.model.update()
+        self.assertEqual(self.model.operation, {})
+        self.assertEqual(self.model.state, "failed")
+
 
 if __name__ == "__main__":
     unittest.main()
