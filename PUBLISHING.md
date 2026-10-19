@@ -2,11 +2,11 @@
 
 Maintainer notes for updating the existing repository and release assets.
 
-**Unreleased local changes:** automatic dependency setup and content-based update
-results are under device test. The canonical published bootstrap asset still
-lacks this code. The local bootstrap/manager version remains **1.2.0**; do not
-describe these changes as a shipped 1.3 release. Remove the short development
-notices in the README and website only when publication and verification justify it.
+The automatic dependency setup and content-based update results are published:
+the canonical `install227ai.sh` release asset was refreshed to include them, and
+the bootstrap fetches the matching `installer_deps.py` from `main`. The
+bootstrap and manager still report version **1.2.0**; do not describe these
+changes as a shipped 1.3 release unless the version constant is bumped.
 
 ## 1. Use the existing release
 
@@ -27,7 +27,7 @@ path when updating the public installer filename.
 
 ## 2. Verify the source URLs
 
-The local bootstrap fetches all four modules: `installer_core.py`,
+The bootstrap fetches all four modules: `installer_core.py`,
 `installer_ui.py`, `installer_cli.py` and `installer_deps.py`, from
 `https://raw.githubusercontent.com/1Z99/project-ai-r36s/main/installer/...`.
 If any stored module is absent, it refreshes the entire matching set; a complete

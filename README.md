@@ -9,8 +9,6 @@ This repository contains the app, artwork, licenses and a **graphical deployment
 manager** for installing, updating and removing 227 AI. The app gets a **227**
 system page in EmulationStation so you launch it like a game.
 
-**Unreleased local changes:** automatic dependency setup and content-based update results described below are under device test; published release bootstrap has not yet been refreshed.
-
 [![Animated R36S illustration showing the 227 AI desktop walkthrough](assets/readme/227-ai-demo.gif)](https://github.com/1Z99/project-ai-r36s/releases/download/v1.0.0/227-ai-demo.mp4)
 
 **[Download the installer: install227ai.sh](https://github.com/1Z99/project-ai-r36s/releases/download/v1.0.0/install227ai.sh)**
@@ -61,7 +59,7 @@ a silent preview.
   Preflight also credits retained partial downloads. Cache occupies card space
   until uninstall; system packages need separate space on the system partition.
 - The manager needs Python **3.9+**, `curl`, `libSDL2` and `libSDL2_ttf`.
-  The local bootstrap can set up missing capabilities on supported firmware as
+  The bootstrap can set up missing capabilities on supported firmware as
   described below. An existing broken or too-old Python fails without upgrading.
 - The app additionally needs `libespeak-ng.so.1` with usable English voice data,
   ALSA `arecord`, `aplay` and `amixer`, and `pkill` (procps). Regular and bold
@@ -104,7 +102,7 @@ runtime and installer downloads, not a frozen copy of the current app. Use
 `install227ai.sh` for all downloads. The deployed manager bootstrap is still
 named `install.sh` internally so installed Tools launchers keep working.
 
-The local bootstrap fetches four matching manager modules (UI, core, CLI and
+The bootstrap fetches four matching manager modules (UI, core, CLI and
 `installer_deps.py`) into `<card>/tools/227-ai-manager/`, validates them in
 temporary files, then publishes
 them with atomic per-file renames. If any module is missing, including the new
@@ -120,7 +118,7 @@ runs the stored manager directly, without an SSH session or terminal chooser.
 The bootstrap sets `SDL_VIDEODRIVER=kmsdrm` and `SDL_RENDER_DRIVER=software` on
 the handheld; `--desktop` leaves the desktop's SDL environment unchanged.
 
-### Automatic dependency setup (local build)
+### Automatic dependency setup
 
 Before Python starts, the shell checks installed Python 3.9+ and `curl`. If
 either tool is absent, it can install only the missing tools and their approved
@@ -335,7 +333,7 @@ Open **Tools > Install 227 AI**, explicitly select the app's card, then choose
 chats. **Uninstall permanently removes the selected card's app, models, settings,
 chat history and cache. Back up `chats.json` / `history.json` first if needed.**
 
-In the local build, a default online install/update resolves GitHub `main` through the
+In the default online mode, an install/update resolves GitHub `main` through the
 GitHub API, then stages source files from that **immutable commit**. Even an
 already-current installation needs internet to check the source. API failures
 (including rate limits) and source-fetch failures report an inability to check,
@@ -404,9 +402,10 @@ release is **v1.0.0**. Those are separate versions. The **85 automated tests** a
 that app revision cover deployment and manager behavior, not model accuracy or
 performance. A fresh two-card manager installation and other hardware/firmware
 variants are not certified by that single-device run.
-The local bootstrap and manager still report **1.2.0**, not a new 1.3 release.
-The two unreleased changes above are not covered by that historical hardware
-record or test count and remain under device test.
+The bootstrap and manager report version **1.2.0**. The automatic dependency
+setup and content-based update results are newer than that historical hardware
+record and test count; they are covered by the current automated suites, not by
+that single-device run.
 
 `dev/project_ai_preview.py` renders the interface on a desktop computer for
 development (`dev/prepare_intro_frames.py` rebuilds the intro asset).
@@ -430,10 +429,10 @@ aarch64) plus `whisper.cpp`'s `whisper-cli`, both MIT-licensed.
 
 ## Troubleshooting
 
-- **Missing dependency / no voice** — the local build checks eSpeak's library
+- **Missing dependency / no voice** — the installer checks eSpeak's library
   and English data during confirmed install/update. Inspect the missing-package
   list and setup error; automatic setup needs supported APT firmware and root
-  or `sudo -n`. The older published bootstrap still needs manual dependencies.
+  or `sudo -n`.
 - **Cannot verify GitHub main** — check internet access and the error details,
   including API rate limits, then retry. A cached download cannot prove that the
   app is current. A local-bundle check only verifies against that local bundle.

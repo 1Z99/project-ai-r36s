@@ -48,11 +48,10 @@ open-source projects. The components below ship with, or are used by, 227 AI.
   - See [`licenses/espeak-ng-NOTICE.txt`](licenses/espeak-ng-NOTICE.txt)
 
 - **DejaVu Sans Mono** regular and bold fonts — bundled SD-card assets for the
-  manager and app in the unreleased local build, also used by the optional PC
-  preview. The bootstrap SHA-256-validates the manager's `fonts/` copies and
-  license; the app keeps copies in its data root. Both can fall back to bundled
-  fonts when system fonts are unavailable. The older published bootstrap has
-  not yet been refreshed for this setup.
+  manager and app, also used by the optional PC preview. The bootstrap
+  SHA-256-validates the manager's `fonts/` copies and license; the app keeps
+  copies in its data root. Both can fall back to bundled fonts when system fonts
+  are unavailable.
   - Upstream: https://dejavu-fonts.github.io/
   - License: Bitstream Vera / public-domain additions (permissive)
   - See [`licenses/DejaVu-fonts-copyright`](licenses/DejaVu-fonts-copyright)
