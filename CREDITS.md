@@ -8,6 +8,14 @@ open-source projects. The components below ship with, or are used by, 227 AI.
 - **Author / maintainer:** 1Z99
 - **License:** MIT (see [`LICENSE`](LICENSE))
 
+## Firmware and platform
+
+Special thanks to **southoz and the dArkOSRE-R36 contributors** for the
+firmware used on the R36S where 227 AI is developed and tested.
+
+- Project: [dArkOSRE-R36](https://github.com/southoz/dArkOSRE-R36)
+- The firmware is installed separately; it is not bundled with 227 AI.
+
 ## Inference runtime
 
 - **llama.cpp** — the local LLM inference server bundled in
