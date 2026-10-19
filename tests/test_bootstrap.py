@@ -291,14 +291,90 @@ sys.exit(''' + repr(install_code) + ''')
         result = self.run_sh(script=script)
         self.assertEqual(result.returncode, 0, result.stderr)
         manager = first / 'tools/227-ai-manager'
-        self.assertTrue((manager / 'install.sh').is_file())
+        self.assertTrue((manager / 'install.bootstrap').is_file())
+        self.assertTrue(os.access(manager / 'install.bootstrap', os.X_OK))
+        self.assertFalse(list(manager.rglob('*.sh')))
         self.assertFalse((second / 'tools/227-ai-manager').exists())
         self.assertFalse(list(manager.glob('.bootstrap.*')))
         self.assertEqual(json.loads((manager / 'bootstrap.log').read_text().splitlines()[-1])['args'], [])
         self.env['PROJECT_AI_RAW_BASE'] = 'file:///does-not-exist'
-        result = subprocess.run([str(first / 'tools/Install 227 AI.sh')], cwd='/', env=self.env,
+        result = subprocess.run([str(first / 'tools/Install 227 AI.sh'), '--source', 'bundle with spaces'], cwd='/', env=self.env,
                                 stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=15)
         self.assertEqual(result.returncode, 0, result.stderr)
+        event = json.loads((manager / 'bootstrap.log').read_text().splitlines()[-1])
+        self.assertEqual(event['args'], ['--source', 'bundle with spaces'])
+        self.assertFalse(list(manager.rglob('*.sh')))
+
+    def test_updated_bootstrap_migrates_legacy_manager_and_shortcut_offline(self):
+        first, _, script, _ = self.fresh_cards()
+        result = self.run_sh(script=script)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        manager = first / 'tools/227-ai-manager'
+        entry = first / 'tools/Install 227 AI.sh'
+        cached = {path.name: path.read_bytes() for path in manager.glob('*.py')}
+        self.env['PROJECT_AI_RAW_BASE'] = 'file:///does-not-exist'
+        for source in (script, manager / 'install.sh'):
+            with self.subTest(source=source):
+                shutil.copy2(script, manager / 'install.sh')
+                (manager / 'install.bootstrap').unlink()
+                entry.write_text(entry.read_text().replace('install.bootstrap', 'install.sh'))
+                result = self.run_sh(script=source)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertFalse(list(manager.rglob('*.sh')))
+                self.assertIn('227-ai-manager/install.bootstrap', entry.read_text())
+                self.assertEqual(cached, {path.name: path.read_bytes() for path in manager.glob('*.py')})
+                result = self.run_sh(script=entry)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertFalse(list(manager.glob('.bootstrap.*')))
+
+    def test_failed_migration_publication_preserves_legacy_launcher(self):
+        first, _, script, _ = self.fresh_cards()
+        result = self.run_sh(script=script)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        manager = first / 'tools/227-ai-manager'
+        entry = first / 'tools/Install 227 AI.sh'
+        legacy = manager / 'install.sh'
+        original = '#!/bin/sh\nprintf "legacy manager\\n"\n'
+        old_entry = entry.read_text().replace('install.bootstrap', 'install.sh')
+        real_mv = shutil.which('mv')
+        (self.bin / 'mv').unlink()
+        for target in (manager / 'install.bootstrap', entry):
+            with self.subTest(target=target):
+                legacy.write_text(original)
+                entry.write_text(old_entry)
+                self.executable('mv', 'import os, sys\n'
+                                'if sys.argv[-1] == ' + repr(str(target)) + ': sys.exit(1)\n'
+                                'os.execv(' + repr(real_mv) + ', [' + repr(real_mv) + '] + sys.argv[1:])\n')
+                result = self.run_sh(script=script)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(legacy.read_text(), original)
+                self.assertEqual(entry.read_text(), old_entry)
+                self.assertFalse(list(manager.glob('.bootstrap.*')))
+                result = self.run_sh(script=entry)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn('legacy manager', result.stdout)
+
+    def test_internal_bootstrap_symlinks_and_directories_are_refused(self):
+        first, _, script, _ = self.fresh_cards()
+        manager = first / 'tools/227-ai-manager'
+        manager.mkdir()
+        outside = self.base / 'outside'
+        outside.write_text('untouched\n')
+        for name in ('install.sh', 'install.bootstrap'):
+            for kind in ('symlink', 'directory'):
+                with self.subTest(name=name, kind=kind):
+                    target = manager / name
+                    if kind == 'symlink':
+                        target.symlink_to(outside)
+                    else:
+                        target.mkdir()
+                    result = self.run_sh(script=script)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn('Refusing ' + ('symlink' if kind == 'symlink' else 'non-regular') +
+                                  ' manager file: ' + name, result.stderr)
+                    self.assertEqual(outside.read_text(), 'untouched\n')
+                    self.assertFalse((self.base / 'curl.calls').exists())
+                    target.unlink() if kind == 'symlink' else target.rmdir()
 
     def test_incomplete_download_does_not_publish_modules(self):
         first, _, script, payload = self.fresh_cards()
@@ -345,7 +421,7 @@ sys.exit(''' + repr(install_code) + ''')
         result = self.run_sh(script=script)
         self.assertEqual(result.returncode, 0, result.stderr)
         (self.base / 'mounts').write_text('/dev/two {} ext4 rw 0 0\n'.format(second))
-        result = self.run_sh(script=first / 'tools/227-ai-manager/install.sh')
+        result = self.run_sh(script=first / 'tools/227-ai-manager/install.bootstrap')
         self.assertNotEqual(result.returncode, 0)
         self.assertFalse((second / 'tools/227-ai-manager').exists())
 
@@ -652,7 +728,7 @@ sys.exit(''' + repr(install_code) + ''')
         (manager / 'installer_deps.py').unlink()
         (payload / 'installer_core.py').write_text('# updated core\n')
         (self.base / 'curl.calls').unlink()
-        result = self.run_sh(script=manager / 'install.sh')
+        result = self.run_sh(script=manager / 'install.bootstrap')
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual((manager / 'installer_core.py').read_text(), '# updated core\n')
         urls = (self.base / 'curl.calls').read_text().splitlines()
@@ -667,7 +743,7 @@ sys.exit(''' + repr(install_code) + ''')
         before = (manager / 'installer_core.py').read_bytes()
         (manager / 'installer_deps.py').unlink()
         (payload / 'installer_deps.py').write_text('not valid !!!')
-        result = self.run_sh(script=manager / 'install.sh')
+        result = self.run_sh(script=manager / 'install.bootstrap')
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual((manager / 'installer_core.py').read_bytes(), before)
         self.assertFalse((manager / 'installer_deps.py').exists())

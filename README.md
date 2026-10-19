@@ -99,8 +99,13 @@ sh /roms2/tools/install227ai.sh
 Use `/roms/tools/install227ai.sh` if you chose the main card. The bootstrap still
 fetches current application source from `main`; the `v1.0.0` asset page hosts the
 runtime and installer downloads, not a frozen copy of the current app. Use
-`install227ai.sh` for all downloads. The deployed manager bootstrap is still
-named `install.sh` internally so installed Tools launchers keep working.
+`install227ai.sh` for all downloads. The stored manager uses `install.bootstrap`
+internally so EmulationStation does not list its support folder as another tool.
+Use **Tools > Install 227 AI**; nothing inside `227-ai-manager/` needs opening.
+Running this updated download also replaces an older manager's shortcut before
+removing its legacy internal `install.sh`. Restart EmulationStation to clear
+the old folder entry. Existing cached managers do not update themselves; app
+Update / Repair alone does not perform this migration.
 
 The bootstrap fetches four matching manager modules (UI, core, CLI and
 `installer_deps.py`) into `<card>/tools/227-ai-manager/`, validates them in

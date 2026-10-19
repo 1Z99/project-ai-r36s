@@ -21,9 +21,12 @@ It bootstraps current manager modules and app code from `main`; the release
 tag in this URL does not freeze those payloads. Existing stored manager modules
 are reused, not automatically updated.
 
-The deployed manager deliberately retains `tools/227-ai-manager/install.sh`
-for compatibility with shipped Tools launchers. Do not rename that internal
-path when updating the public installer filename.
+The deployed manager retains `tools/227-ai-manager/install.bootstrap`, not a
+`.sh` file: EmulationStation scans subfolders and would otherwise expose the
+manager folder as a duplicate tool. The bootstrap publishes the new internal
+file and **Install 227 AI** shortcut before removing legacy manager `install.sh`.
+Existing users must run the updated public download once for this migration;
+cached managers and app Update / Repair do not fetch a newer bootstrap.
 
 ## 2. Verify the source URLs
 

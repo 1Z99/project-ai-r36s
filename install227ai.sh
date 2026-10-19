@@ -240,9 +240,11 @@ with open('/proc/mounts') as stream:
 if (str(card) not in mounts or 'ro' in mounts[str(card)]
         or not os.access(card, os.W_OK | os.X_OK)):
     sys.exit('Manager card is not mounted and writable')
-for name in ('bootstrap.log', 'install.sh', 'installer_ui.py', 'installer_core.py', 'installer_cli.py', 'installer_deps.py'):
+for name in ('bootstrap.log', 'install.sh', 'install.bootstrap', 'installer_ui.py', 'installer_core.py', 'installer_cli.py', 'installer_deps.py'):
     if (path / name).is_symlink():
         sys.exit('Refusing symlink manager file: ' + name)
+    if name in ('install.sh', 'install.bootstrap') and (path / name).exists() and not (path / name).is_file():
+        sys.exit('Refusing non-regular manager file: ' + name)
 PY
     mkdir -p "$MODULES" || fail 'Cannot create manager directory.'
     LOG="$MODULES/bootstrap.log"
@@ -277,16 +279,20 @@ PY
             mv -f -- "$TEMP/$name" "$MODULES/$name" || fail "Cannot publish $name."
         done
     fi
-    if [ "$SELF" != "$MODULES/install.sh" ]; then
-        cp -- "$SELF" "$TEMP/install.sh" && chmod 755 "$TEMP/install.sh" && \
-            mv -f -- "$TEMP/install.sh" "$MODULES/install.sh" || fail 'Cannot retain bootstrap.'
+    # EmulationStation scans subfolders for .sh files; keep internal code off the menu.
+    if [ "$SELF" != "$MODULES/install.bootstrap" ]; then
+        cp -- "$SELF" "$TEMP/install.bootstrap" && chmod 755 "$TEMP/install.bootstrap" && \
+            mv -f -- "$TEMP/install.bootstrap" "$MODULES/install.bootstrap" || fail 'Cannot retain bootstrap.'
     fi
     ENTRY="$(dirname -- "$MODULES")/Install 227 AI.sh"
     [ ! -L "$ENTRY" ] || fail 'Refusing symlink Tools entry.'
+    [ ! -e "$ENTRY" ] || [ -f "$ENTRY" ] || fail 'Refusing non-regular Tools entry.'
     printf '%s\n' '#!/bin/sh' \
         'DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)' \
-        'exec sh "$DIR/227-ai-manager/install.sh" "$@"' > "$TEMP/entry.sh"
+        'exec sh "$DIR/227-ai-manager/install.bootstrap" "$@"' > "$TEMP/entry.sh"
     chmod 755 "$TEMP/entry.sh" && mv -f -- "$TEMP/entry.sh" "$ENTRY" || fail 'Cannot publish Tools entry.'
+    # Remove the legacy menu entry only after its replacement and shortcut are ready.
+    rm -f -- "$MODULES/install.sh" || fail 'Cannot remove legacy manager menu entry.'
 fi
 
 if [ "$CLI" -eq 1 ]; then
