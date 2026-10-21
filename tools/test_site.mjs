@@ -375,6 +375,7 @@ try {
   await nestedPage.waitForURL('**/project-ai-r36s/index.html#projects');
   assert(await nestedPage.locator('#projects').isVisible());
   checks += 4;
+  await subpathContext.unrouteAll({ behavior: 'wait' });
   await subpathContext.close();
 
   const noJs = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } });
