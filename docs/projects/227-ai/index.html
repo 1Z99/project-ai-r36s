@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080d0b">
+  <title>Overview | 227 AI | 1Z99</title>
+  <meta name="description" content="227 AI by 1Z99: a native offline assistant for the R36S. Download the installer, read the manual and explore the tested hardware setup.">
+  <link rel="icon" href="../../media/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../site.css">
+  <script src="../../site.js" defer></script>
+</head>
+<body data-project="227-ai" data-captures="screenshots.json">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <a class="brand workshop-brand" href="../../index.html" aria-label="1Z99 home"><span class="brand-number">1Z99</span><span class="brand-suffix">R36S<span>APPS &amp; EXPERIMENTS</span></span></a>
+    <nav class="main-nav" id="main-nav" aria-label="Main navigation"><a href="../../index.html#projects">Projects</a><a href="../../index.html#about">About</a><a href="../../index.html#device">My R36S</a></nav>
+    <div class="header-actions"><button type="button" class="search-trigger" data-search-open aria-label="Search site">Search <kbd>/</kbd></button><button type="button" class="menu-toggle" data-menu-toggle aria-controls="site-menu" aria-expanded="false">Menu</button></div>
+  </header>
+  <div class="project-context page-width">
+    <nav class="breadcrumb" aria-label="Breadcrumb"><ol><li><a href="../../index.html">1Z99</a></li><li><a href="../../index.html#projects">Projects</a></li><li><a href="index.html" aria-current="page">227 AI</a></li></ol></nav>
+    <nav class="project-nav" aria-label="227 AI navigation"><span class="project-nav-label">227 AI</span><a href="index.html" aria-current="page">Overview</a><a href="guide.html">Install</a><a href="reference.html">Manual</a><a href="development.html">Build notes</a><a href="gallery.html">Screenshots</a></nav>
+  </div>
+  <main id="main" class="page-width project-overview">
+    <section class="project-overview-hero" id="overview" data-search-section>
+      <div>
+        <p class="eyebrow">227 AI / Overview</p>
+        <h1>227 AI<span>Offline. On the R36S.</span></h1>
+        <p class="lede">A local assistant for a little handheld. Type with the controller, dictate a short message, or have a reply read aloud. No cloud account, and no connection needed for everyday use.</p>
+        <ul class="project-tags" aria-label="Project technologies"><li>Python + SDL2</li><li>Local inference</li><li>Controller-first</li></ul>
+        <div class="hero-actions"><a class="button primary" href="https://github.com/1Z99/project-ai-r36s/releases/download/v1.0.0/install227ai.sh">Download installer &#8595;</a><a class="text-link" href="guide.html">Installation guide &#8594;</a></div>
+        <p class="hero-fine">Available now / <strong>Manager 1.2.0</strong><br>Installer downloads current app source; the v1.0.0 asset is not a frozen app bundle.</p>
+      </div>
+      <figure class="shot" data-shot="chat"><div class="shot-placeholder"><span class="shot-code">227 AI / PC DEMO</span><strong>A conversation on the handheld interface</strong><p>Native PC capture. Scripted replies, not live on-device inference.</p><span class="shot-aspect">640 x 480 / 4:3</span></div><figcaption>Lossless native PC capture with scripted sample replies. <a href="gallery.html">View screenshots and capture provenance.</a></figcaption></figure>
+    </section>
+    <section class="project-overview-details" id="before-installing" data-search-section>
+      <div class="section-label"><span>01 / BEFORE INSTALLING</span><span>NATIVE APP / NOT A BROWSER DEMO</span></div>
+      <div class="intro-grid">
+        <div><h2>A native app.<br>A small local model.</h2><p>227 AI runs on the handheld using Python, SDL2 and a local llama.cpp engine. Conversations and settings stay in files on your SD card. The website's PC walkthrough is a separate demonstration with scripted replies and simulated microphone input.</p><p>The app includes an on-screen keyboard, saved chats, short English dictation with Whisper and selected-reply read-aloud with espeak-ng. Dictation requires a usable USB microphone; text chat does not.</p></div>
+        <div><h2>Start with the tested setup.</h2><p>The recorded hardware run used an R36S with a Panel 4 display and dArkOSRE build <code>03082026</code>. It does not certify every R36S variant, firmware image or a fresh two-card installation.</p><p>You need internet for initial installation and about 700 MB of free SD-card space, plus separate space for any missing system dependencies. Model loading and answers can take time. A small model can be wrong; there is no live web search or speed guarantee.</p><a class="text-link" href="development.html#tested-build">227 AI tested environment &#8594;</a></div>
+      </div>
+    </section>
+    <section class="project-overview-details" id="project-resources" data-search-section>
+      <div class="section-label"><span>02 / EXPLORE 227 AI</span><a href="https://github.com/1Z99/project-ai-r36s">Source on GitHub &#8599;</a></div>
+      <h2>From first install to source.</h2>
+      <div class="manual-links">
+        <a href="guide.html"><span>01 / INSTALL</span><h3>Get started</h3><p>The two-step SD-card install, SSH alternative, updates and backups.</p><span class="link-arrow" aria-hidden="true">&#8594;</span></a>
+        <a href="reference.html"><span>02 / MANUAL</span><h3>Use the app</h3><p>Controls, settings, speech, local storage, privacy and licenses.</p><span class="link-arrow" aria-hidden="true">&#8594;</span></a>
+        <a href="development.html"><span>03 / BUILD NOTES</span><h3>Look underneath</h3><p>The tested environment, native renderer, installer boundaries and local builds.</p><span class="link-arrow" aria-hidden="true">&#8594;</span></a>
+      </div>
+      <div class="project-reference-links"><a href="gallery.html">Screenshots and PC demo frames &#8594;</a><a href="https://github.com/1Z99/project-ai-r36s">227 AI on GitHub &#8599;</a></div>
+    </section>
+  </main>
+  <footer class="site-footer"><div><a class="footer-brand" href="../../index.html">1Z99</a><p>R36S apps and experiments.</p></div><nav aria-label="227 AI links"><a href="guide.html">Install 227 AI</a><a href="reference.html#licenses">Licenses</a><a href="https://github.com/1Z99/project-ai-r36s">227 AI source</a></nav><p class="footer-note">227 AI: a little handheld. A local assistant. No cloud account.</p></footer>
+</body>
+</html>

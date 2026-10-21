@@ -68,6 +68,16 @@ firmware used on the R36S where 227 AI is developed and tested.
 
 - The 227 AI background, logo and cover art were created by **1Z99** and are
   released under the same MIT license as the application.
+- The original 1Z99 website, handheld illustration, original demo content and
+  captions are also covered by the project MIT license. The 227 AI demos use
+  scripted sample data, not private conversations or recordings. Third-party
+  projects and components retain their own licenses and credits above.
+- The 227 TV website playback screenshots contain real **France 24** broadcast
+  frames, decoded in the native app on a PC. Broadcast images and station marks
+  belong to **France Medias Monde** and the respective rights holders, not the
+  project's MIT license. No broadcaster endorsement is implied, and public stream
+  listings do not grant redistribution rights. Sources and capture provenance are
+  linked in [`docs/media/227-tv/NOTICE.md`](docs/media/227-tv/NOTICE.md).
 
 ---
 

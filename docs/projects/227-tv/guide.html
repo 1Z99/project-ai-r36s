@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080d0b">
+  <title>Get Started | 227 TV | 1Z99</title>
+  <meta name="description" content="Install 227 TV on a supported R36S, choose SD1 or SD2, find your first country and channel, and safely update, repair or remove the app.">
+  <link rel="icon" href="../../media/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../site.css">
+  <script src="../../site.js" defer></script>
+</head>
+<body data-project="227-tv" data-captures="projects/227-tv/screenshots.json">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <a class="brand workshop-brand" href="../../index.html" aria-label="1Z99 home"><span class="brand-number">1Z99</span><span class="brand-suffix">R36S<span>APPS &amp; EXPERIMENTS</span></span></a>
+    <nav class="main-nav" id="main-nav" aria-label="Main navigation">
+      <a href="../../index.html#projects">Projects</a><a href="../../index.html#about">About</a><a href="../../index.html#device">My R36S</a>
+    </nav>
+    <div class="header-actions"><button type="button" class="search-trigger" data-search-open aria-label="Search site">Search <kbd>/</kbd></button><button type="button" class="menu-toggle" data-menu-toggle aria-controls="site-menu" aria-expanded="false">Menu</button></div>
+  </header>
+  <div class="project-context page-width">
+    <nav class="breadcrumb" aria-label="Breadcrumb"><ol><li><a href="../../index.html">1Z99</a></li><li><a href="../../index.html#projects">Projects</a></li><li><a href="index.html">227 TV</a></li><li><span aria-current="page">Get started</span></li></ol></nav>
+    <nav class="project-nav" aria-label="227 TV navigation"><span class="project-nav-label">227 TV</span><a href="index.html">Overview</a><a href="guide.html" aria-current="page">Install</a><a href="reference.html">Manual</a><a href="development.html">Build notes</a><a href="gallery.html">Screenshots</a></nav>
+  </div>
+  <main id="main" class="docs-layout">
+    <aside class="docs-sidebar">
+      <span class="eyebrow">Get Started</span>
+      <nav aria-label="On this page">
+        <a href="#before-you-start">Before you start</a><a href="#installation">Installation</a><a href="#choose-card">Choose a card</a><a href="#shared-system">The shared 227 menu</a><a href="#first-launch">First launch</a><a href="#update-remove">Update and remove</a><a href="#safety">Dependencies and safety</a><a href="#troubleshooting">Troubleshooting</a><a href="#cli">Advanced CLI</a>
+      </nav>
+    </aside>
+    <article class="docs-article">
+      <div class="doc-heading">
+        <p class="eyebrow">227 TV / Get Started</p>
+        <h1>From the card's tools folder to 227 &gt; 227 TV.</h1>
+        <p class="lede">Copy one installer to your games card, connect to Wi-Fi, and install from Tools. Then open <strong>227 &gt; 227 TV</strong> to explore countries and watch live channels. You do not need 227 AI, SSH or terminal commands.</p>
+        <div class="doc-meta"><span>R36S / dArkOSRE</span><span>Latest: 227 TV 1.0.4</span><a href="https://github.com/1Z99/r36s-tv/releases">GitHub Releases &#8599;</a></div>
+      </div>
+
+      <section id="before-you-start" data-search-section>
+        <h2>Before you start</h2>
+        <p>This release targets an <strong>R36S, aarch64, running dArkOSRE based on Debian 13 (trixie)</strong>, including the tested build <code>03082026</code> and kernel <code>4.4.189</code>. Original Ubuntu-based ArkOS, AmberELEC, 32-bit images and arbitrary clones are not supported by the shipped binaries. The manager checks the platform before downloading/installing the application; the smaller manager may already have downloaded by then.</p>
+        <p>The normal one-file install needs internet. Live television and new country lists also need a connection; Wi-Fi adapter support comes from your firmware, not TV. Keep the handheld powered during installation and leave at least <strong>200 MiB free</strong> on the destination card as a practical starting budget for downloads, unpacking and rollback, not an exact installed size. Missing system packages need separate space on the system partition.</p>
+        <details><summary>Technical requirements</summary>
+        <ul class="check-list">
+          <li>Python 3.10 or newer, plus the firmware's SDL2 and SDL2_ttf libraries.</li>
+          <li>Working SDL KMSDRM and Mali drivers on the handheld for display.</li>
+          <li>Root or existing noninteractive <code>sudo -n</code> authorization for installation; no password is requested or stored.</li>
+          <li>A writable SD card actually mounted at <code>/roms</code> or <code>/roms2</code>.</li>
+          <li>Wi-Fi for live streams and for downloading any missing Debian 13 packages.</li>
+        </ul>
+        </details>
+      </section>
+
+      <section id="installation" data-search-section>
+        <h2>Installation</h2>
+        <h3 id="one-file-installer">One-file installer (online, recommended)</h3>
+        <p>Download <a href="https://github.com/1Z99/r36s-tv/releases/latest/download/Install.227.TV.sh"><code>Install.227.TV.sh</code> &#8599;</a> from GitHub Releases. With the handheld powered off, copy it to the games card's existing <code>tools</code> folder alongside the game folders. You can rename it <code>Install 227 TV.sh</code> for a tidy menu. Safely eject the card, put it back, and boot the handheld.</p>
+        <p>Use the release installer, <strong>not</strong> a source-code ZIP, the source <code>install227tv.sh</code> template or <code>install.sh</code>. If your computer cannot see the games partition, do not format the card; use a reader/OS that can access it.</p>
+        <ol class="steps">
+          <li><strong>Enable Wi-Fi.</strong></li>
+          <li>Open <strong>Tools &gt; Install 227 TV</strong>.</li>
+          <li><strong>Choose the destination card:</strong> use Left/Right on the destination row to select <strong>SD1</strong> (<code>/roms</code>) or <strong>SD2</strong> (<code>/roms2</code>). An unmounted or unwritable card is unavailable. If 227 AI already has a 227 menu, choose that card.</li>
+          <li>Select <strong>Install</strong>, confirm <strong>Yes</strong>, and wait for completion.</li>
+          <li>Reload or restart EmulationStation's menu yourself when ready.</li>
+          <li>Open <strong>227 &gt; 227 TV</strong>. TV does not install into Ports.</li>
+        </ol>
+        <p>The installer downloads a controller-driven manager, then the complete app, artwork, fonts and matching playback engine. Downloads are checked before use. Obtain the script from the project's trusted release page: checksums detect mismatched files, but there is no independent publisher signature. See the <a href="development.html#safety">build notes</a> for the online and offline trust chains.</p>
+        <h3 id="offline-bundle">Offline Application Bundle</h3>
+        <p>For a card without network access, download <em>three matching files</em> from the same release page and put them together in the card's <code>tools</code> directory:</p>
+        <ul class="check-list">
+          <li><code>Install 227 TV.sh</code></li>
+          <li><code>melkor227-tv-manager-1.0.4.tar.gz</code></li>
+          <li><code>melkor227-tv-1.0.4-darkosre-arm64.tar.gz</code></li>
+        </ul>
+        <p>The two archives make application installation offline; they do not contain a replacement operating system or every Debian package. Missing compatible system packages still come from the Debian repositories, and existing working firmware dependencies are reused.</p>
+        <div class="callout note"><p><strong>Keep matching files together.</strong> A matching manager archive beside the script automatically selects the local, pinned release rather than latest-release discovery. The script verifies that manager; its embedded release record verifies the application. No separate <code>release.json</code> download is needed for this three-file method. To return to normal online updates later, move the two copied archives out of the installer's folder and reopen the script with Wi-Fi.</p></div>
+        <figure class="shot" data-shot="installer"><div class="shot-placeholder"><span class="shot-code">INSTALLER / PC PREVIEW</span><strong>Choose the destination card</strong><p>Offline render of the real 1.0.4 manager home screen. Nothing is installed.</p><span class="shot-aspect">640 x 480 / 4:3</span></div><figcaption>The manager requires an explicit destination before any action runs. Update, Repair and Uninstall TV complete the four actions.</figcaption></figure>
+        <h3 id="advanced-mirror">Advanced mirror override</h3>
+        <p>Advanced users can set an explicit HTTPS mirror or <code>file://</code> release directory. This pins Install/Update to that release rather than discovering latest:</p>
+        <div class="code-block"><div class="code-heading"><span>Point the bootstrap at a hosted or local release</span><button type="button" data-copy>Copy</button></div><pre><code>TV227_RELEASE_BASE="https://github.com/1Z99/r36s-tv/releases/download/v1.0.4/" \
+  sh 'Install 227 TV.sh' --cli --roms /roms --action install --yes</code></pre></div>
+        <p>Use a matching script and both archives. An override does not disable size/hash checks and is not a way to make an old script accept arbitrary new files. Repair still targets the installed version.</p>
+      </section>
+
+      <section id="choose-card" data-search-section>
+        <h2>Choose a card</h2>
+        <p>The manager treats <strong>SD1</strong> (<code>/roms</code>) and <strong>SD2</strong> (<code>/roms2</code>) as independent destinations; unmounted or read-only cards cannot be selected. Installing on the other card does not move or delete an earlier copy.</p>
+        <p>The card picker is not a migration tool. Back up and maintain each copy deliberately, and choose the card you intend to update.</p>
+        <p>The bootstrap stores its manager on the card containing the script when eligible, otherwise a writable mounted SD2, then SD1. The app destination is a separate explicit choice. Keep the <code>tools/227-tv-manager/</code> support folder and <strong>Install 227 TV</strong> shortcut for maintenance. Both app copies use the same default home-directory TV state, not separate per-card favorites.</p>
+      </section>
+
+      <section id="shared-system" data-search-section>
+        <h2>The shared 227 menu</h2>
+        <p>If an EmulationStation system <code>&lt;name&gt;227&lt;/name&gt;</code> already exists, its directory, command, extensions, theme and unrelated metadata are preserved. For example, it can point to <code>/roms/227ai/</code>, alongside <code>227 AI.sh</code>. TV adds only its own launcher, artwork and gamelist entry, preserving <strong>227 AI statistics and other projects</strong>.</p>
+        <p><strong>You do not need an existing 227 system or 227 AI.</strong> If the system is absent, TV creates it automatically using <code>&lt;card&gt;/227ai/</code>. Reloading EmulationStation only makes that new menu visible; you do not create it yourself. If 227 is registered on another card, the installer refuses to silently retarget it: choose that card instead. The existing registration must use a direct child of the selected card for the relative launcher.</p>
+        <p>Only TV's own historical Ports entry is migrated, and only when its launcher is identified as TV's file. Unrelated Ports games are never removed, and a Tools fallback remains. Changed EmulationStation XML receives timestamped backups beside the original files.</p>
+        <div class="callout warning"><p><strong>Some 227 AI manager versions can remove other shared entries.</strong> Do not assume a newly downloaded AI bootstrap updates a complete cached manager backend. Back up the shared menu before AI maintenance, and verify that manager's preservation behavior separately. If TV's menu entry is lost, close TV and run <strong>Repair</strong> in the TV manager. TV does not modify AI's manager, models or chats.</p></div>
+      </section>
+
+      <section id="first-launch" data-search-section>
+        <h2>First launch</h2>
+        <p>Open <strong>227 &gt; 227 TV</strong> after refreshing the menu. The short 19-frame intro plays on each normal launch; <kbd>A</kbd>, <kbd>B</kbd> or <kbd>Start</kbd> skips it. An empty World list saying <strong>Choose a country</strong> is normal: startup does not download the world's channels.</p>
+        <ol class="steps">
+          <li>Press <kbd>Start</kbd>, choose <strong>Browse countries</strong>, move Up/Down and confirm a country with <kbd>A</kbd>. This is the easiest first selection; you can explore the globe with the left-stick pointer later.</li>
+          <li>Wait for its channel list. Use Up/Down to select a station and <kbd>A</kbd> to watch. Left/Right pages the list. Try another station if the broadcaster is unavailable.</li>
+          <li>Playback already fills the screen. The header, footer and pointer hide after about 2.5 seconds without input. <kbd>A</kbd> pauses/resumes; <kbd>L2</kbd>/<kbd>R2</kbd> lowers/raises volume.</li>
+          <li>Press <kbd>B</kbd> to stop playback and return to browsing. With no menu open, <kbd>Y</kbd> saves/removes the selected station as a favorite; <kbd>L1</kbd>/<kbd>R1</kbd> switches World, Favorites and Recent.</li>
+          <li>To leave TV, use <strong>Start &gt; Exit TV</strong>, select <strong>Exit to EmulationStation</strong> and confirm with <kbd>A</kbd>. <kbd>B</kbd> first clears country/search filters when browsing, then opens the exit prompt from the unfiltered world.</li>
+        </ol>
+        <figure class="shot" data-shot="watch"><div class="shot-placeholder"><span class="shot-code">227 TV / PC PLAYBACK CAPTURE</span><strong>Fullscreen watch view</strong><p>France 24 French playing in the native app on a PC.</p><span class="shot-aspect">640 x 480 / 4:3</span></div><figcaption>Fullscreen watch controls during real France 24 French playback. <a href="gallery.html#capture-plan">PC capture, not handheld evidence.</a></figcaption></figure>
+        <p>Press <kbd>X</kbd> to search <em>the channels already loaded for that country</em>, not a worldwide service or a country finder. Search can also filter saved Favorites/Recent. The keyboard opens before loading, but cannot find unseen channels. See the <a href="reference.html#search">search reference</a>.</p>
+        <p>If playback is slow, try <strong>Start &gt; Resolution / frame rate</strong> and a lower advertised format, or keep <strong>Auto / up to 480p</strong>. Some broadcasters offer only HD; TV warns and continues rather than creating a lower-quality stream. Start with one channel before trying the <a href="reference.html#tabs">experimental matrix</a>.</p>
+        <div class="callout warning"><p><strong>Launch handheld TV only through EmulationStation.</strong> The app needs exclusive use of the handheld display and controller while the menu waits. Do not start it remotely or in the background beside EmulationStation. Desktop previews are a separate developer mode.</p></div>
+      </section>
+
+      <section id="update-remove" data-search-section>
+        <h2>Update and remove</h2>
+        <p>Close TV first; the installer does not kill the app, start TV, restart EmulationStation, reboot, upgrade firmware or alter Wi-Fi configuration.</p>
+        <div class="table-wrap"><table><caption>Manager actions</caption><thead><tr><th scope="col">Action</th><th scope="col">What happens</th></tr></thead><tbody>
+          <tr><th scope="row">Install</th><td>Installs beside 227 AI after verifying the application archive; preserves an existing 227 registration.</td></tr>
+          <tr><th scope="row">Update</th><td>In normal online mode, checks the repository's newest stable release, verifies a newer bundle and refuses downgrades. A same-version result is a version check, not an installed-file integrity audit: use Repair for missing/changed files. An offline latest check fails safely; explicit mirrors/local bundles compare their pinned version instead.</td></tr>
+          <tr><th scope="row">Repair</th><td>Restores exactly the installed release, preferring <code>installed-release.json</code> beside the app. It can use a matching verified application cache offline. Without a record, the version is read from installed code without executing it and its exact tag metadata is fetched, so that recovery needs network access. Repair never guesses "latest".</td></tr>
+          <tr><th scope="row">Uninstall TV</th><td>Removes TV's program and launchers, not 227 AI, the shared 227 registration or themes. Favorites, history, catalog caches and preferences in <code>~/.local/share/melkor227-tv</code> are deliberately retained.</td></tr>
+        </tbody></table></div>
+        <p><strong>B</strong> asks to cancel. Downloads are cancellable; an in-progress APT transaction or final publication is allowed to finish safely before cancellation takes effect. On failure <strong>A</strong> retries, <strong>X</strong> shows details and <strong>B</strong> returns to the menu.</p>
+        <p>Installers from v1.0.0/v1.0.1 remain pinned to their own version: replace that Tools script <em>once</em> with the newest <code>Install 227 TV.sh</code> from the <a href="https://github.com/1Z99/r36s-tv/releases">Releases page &#8599;</a>. From v1.0.2 onward, future stable releases are available through Update in normal online mode; explicit mirror/local-bundle choices remain pinned.</p>
+        <p><strong>Back up before maintenance.</strong> Close TV and copy <code>~/.local/share/melkor227-tv/state.json</code> to a separate safe location; it holds favorites, the last 50 recent stations and preferences. Copy the entire data directory if you also want country caches and health records. State normally lives in the user's home, not on the games card. To restore, keep TV closed and restore the saved files to the same data root, retaining an untouched backup.</p>
+      </section>
+
+      <section id="safety" data-search-section>
+        <h2>Dependencies and safety</h2>
+        <p>The complete app bundle includes its own matching playback engine. You do not need to install a distribution mpv package or replace graphics drivers. Working firmware dependencies are reused; only missing, approved Debian 13 packages may be added after a simulated, version-pinned safety check. Existing broken libraries or a plan requiring upgrades, removals or protected graphics/base-system changes cause an error.</p>
+        <p>Missing Python, curl or CA certificates can be bootstrapped under the same restricted policy; an existing Python older than 3.10 is not upgraded. System packages remain after TV removal and are outside app-file rollback. Do not power off during package setup or final installation. Rollback after a handled failure is not a guarantee of recovery from power loss. The <a href="development.html#safety">technical safety model</a> explains the boundaries.</p>
+      </section>
+
+      <section id="troubleshooting" data-search-section>
+        <h2>Troubleshooting</h2>
+        <details><summary>Tools does not show the installer, or 227 is missing</summary><p>Check that the release script is in the games card's existing <code>tools</code> folder and ends in <code>.sh</code>, then reload the menu. A scraped-games-only filter can hide an unregistered script. After successful installation, reload/restart EmulationStation; if TV is still missing, choose its installed card and run Repair. Existing shared 227 directories are preserved, so the path need not literally be <code>227ai/</code>.</p></details>
+        <details><summary>The installer closes before a window appears</summary><p>Inspect <code>~/.local/state/melkor227-tv/bootstrap.log</code> (or <code>$XDG_STATE_HOME/melkor227-tv/bootstrap.log</code> when overridden). This records early download, Python, platform and pre-display failures. A text error dialog is only available with a usable terminal and dialog utility. Check network access, supported firmware and existing noninteractive sudo authorization; relaunch after correcting the reported error.</p></details>
+        <details><summary>My card is unavailable, or 227 is registered on another card</summary><p>The card must actually be mounted at <code>/roms</code> or <code>/roms2</code>, writable and not redirected by a symlink. Do not create a directory to imitate an absent card or format it to fix this. If 227 already points at the other card, choose that card: TV refuses to silently move the shared menu.</p></details>
+        <details><summary>Where are the other logs and downloads?</summary><p>The graphical manager log is <code>~/.local/state/melkor227-tv/installer.log</code>; the launcher appends to <code>~/.local/share/melkor227-tv/app.log</code> (under <code>TV227_DATA</code> if overridden). Application archives cache on the selected app card at <code>tools/227-tv-manager/cache</code>; manager archives cache on the bootstrap's Tools card at <code>tools/.227-tv-downloads</code>. Review logs for private URLs and paths before sharing.</p></details>
+        <details><summary>The installer says a dependency ABI is incompatible</summary><p>Use matching firmware or rebuild the runtime against the tested recipe. Do not replace Mali/GBM libraries or install foreign distribution packages.</p></details>
+        <details><summary>A download or latest-release check fails</summary><p>Check Wi-Fi, free card/root-partition space and the exact error. In the manager, <kbd>X</kbd> opens failure details and <kbd>A</kbd> retries. For offline files, use the matching script and two archives from one release. Never bypass a checksum mismatch. Offline Repair needs its installed-release record and matching cached application archive; the bootstrap also needs a verified cached manager. A first-ever one-file launch cannot work offline without the three-file bundle.</p></details>
+        <details><summary>World is empty, search finds nothing, or a country looks stale</summary><p>Open <strong>Start &gt; Browse countries</strong> first, and wait for loading. Search only filters the selected country's loaded channels or saved Favorites/Recent; it does not fetch worldwide results. Clear a search with the keyboard's CLEAR then FIND. Country/query filters also apply to Favorites/Recent; use <strong>World / clear filters</strong> before switching tabs to see all saved entries. Try <strong>Refresh selected country</strong> online; a failed fetch can retain an older country cache, and some countries have no playlist.</p></details>
+        <details><summary>A channel buffers, says SIGNAL UNAVAILABLE, or has no sound</summary><p>Try another channel to distinguish a broadcaster/region problem from a connection problem. Reopen the station after checking Wi-Fi. For slow video, choose a lower advertised quality; Auto cannot manufacture SD from an HD-only broadcast. Press <kbd>A</kbd> if paused and raise volume with <kbd>R2</kbd>; in matrix mode, focus a populated cell to hear it. Recheck station health tests HTTP reachability, not working video or audio.</p></details>
+        <details><summary>TV closes immediately, or competes with EmulationStation</summary><p>Read <code>app.log</code> for a duplicate launch, missing runtime, invalid JSON or display-ownership error. Launch from <strong>227 &gt; 227 TV</strong> or its Tools fallback, never a parallel remote/background process. If a normal menu launch still competes, stop testing and report it rather than disabling the guard; multiple sessions can also cause conflicts. Close TV before Repair. Back up malformed state before attempting recovery; do not delete favorites as a first troubleshooting step.</p></details>
+        <p>Still blocked? File an <a href="https://github.com/1Z99/r36s-tv/issues">issue &#8599;</a> with firmware/build, architecture, chosen card, installed version, action, exact error and relevant log excerpts. Say whether an image is an offline preview or a real device capture.</p>
+      </section>
+
+      <section id="cli" data-search-section>
+        <h2>Advanced CLI</h2>
+        <p>The bootstrap accepts the same actions over SSH through an explicit headless <code>--cli</code> mode, using the graphical manager's backend without opening its display. Changes require <code>--roms</code> and <code>--yes</code>; substitute <code>/roms2</code> only when that is the intended mounted app card. Do not start the graphical manager remotely alongside EmulationStation.</p>
+        <div class="code-block"><div class="code-heading"><span>Read-only destination and 227 registration validation</span><button type="button" data-copy>Copy</button></div><pre><code>sh 'Install 227 TV.sh' --cli --roms /roms --action install --dry-run</code></pre></div>
+        <div class="code-block"><div class="code-heading"><span>Install from a complete local source tree</span><button type="button" data-copy>Copy</button></div><pre><code>sh install227tv.sh --source /path/to/melkor227-tv \
+  --cli --roms /roms --action install --yes</code></pre></div>
+        <div class="code-block"><div class="code-heading"><span>Remove TV only; saved TV data and 227 AI are kept</span><button type="button" data-copy>Copy</button></div><pre><code>sh 'Install 227 TV.sh' --cli --roms /roms --action uninstall --yes</code></pre></div>
+        <p><strong>This is not a write-free standalone-bootstrap command.</strong> Bootstrap startup can log, download and replace verified manager files before the CLI dry-run runs. The manager dry-run itself only validates the card and shared-menu destination: it does not install packages, download the application, change menus or prove sufficient staging space. Missing bootstrap tools are not installed in dry-run mode. <code>--es-cfg PATH</code> and <code>--themes PATH</code> support explicit integration/test destinations; use isolated fixtures rather than a live config for host testing.</p>
+      </section>
+      <nav class="doc-pagination" aria-label="Documentation pages"><a href="index.html">Back to 227 TV overview</a><a href="reference.html">Next: Field manual</a></nav>
+    </article>
+  </main>
+  <footer class="site-footer"><div><a class="footer-brand" href="../../index.html">1Z99</a><p>R36S apps and experiments.</p></div><nav aria-label="227 TV links"><a href="index.html">227 TV overview</a><a href="reference.html#licenses">Licenses</a><a href="https://github.com/1Z99/r36s-tv">227 TV source</a><a href="https://github.com/1Z99/project-ai-r36s">227 AI source</a></nav><p class="footer-note">227 TV: a little handheld. A globe. Live channels.</p></footer>
+</body>
+</html>

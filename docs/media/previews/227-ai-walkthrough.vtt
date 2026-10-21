@@ -1,0 +1,49 @@
+WEBVTT
+
+00:00:00.000 --> 00:00:02.000
+Original Intro: The production 19-frame intro, including its original fade into frame 19.
+
+00:00:02.000 --> 00:00:04.000
+Load LFM: Two-second illustrative loading progress for the release-default LFM model; not a benchmark.
+
+00:00:04.000 --> 00:00:12.000
+Type and Send: Type 'what can you do?' on the production on-screen keyboard and explicitly select SEND.
+
+00:00:12.000 --> 00:00:20.000
+Sample Reply: Predefined sample text streams through the production reply renderer; no model runs.
+
+00:00:20.000 --> 00:00:20.500
+Read aloud: offline synthesized speech.
+
+00:00:20.500 --> 00:00:22.817
+I can help with short questions, draft
+
+00:00:22.817 --> 00:00:25.520
+text, and explain ideas. I run locally
+
+00:00:25.520 --> 00:00:27.790
+on this handheld. This is a scripted
+
+00:00:27.790 --> 00:00:29.770
+demo, not a live AI answer.
+
+00:00:36.000 --> 00:00:40.000
+R2: VOICE settings. Select USB and TEST MICROPHONE. No real microphone access.
+
+00:00:40.000 --> 00:00:44.000
+VISUAL DEMO: simulated recording. Nothing is captured.
+
+00:00:44.000 --> 00:00:48.000
+Prerecorded synthetic sample, not live microphone audio: This is a microphone test. Your voice stays on the device.
+
+00:00:48.000 --> 00:00:50.000
+VISUAL DEMO: verdict uses the prerecorded sample's waveform, not a microphone.
+
+00:00:50.000 --> 00:01:04.000
+Dictate and Review: Select MIC, simulate recording and transcription, review the draft, then explicitly SEND a second sample question.
+
+00:01:04.000 --> 00:01:13.000
+Reopen History: Open in-memory sample history, navigate between entries, and reopen the walkthrough conversation.
+
+00:01:13.000 --> 00:01:18.000
+Close the App: Pause on the reopened chat, then show STOP and fade out as the scripted app closes.

@@ -21,6 +21,11 @@ live model or a device recording. Click it for the full video with offline-gener
 speech. GitHub READMEs cannot run the site's interactive video player; the GIF is
 a silent preview.
 
+**[Project Website](https://1z99.github.io/project-ai-r36s/projects/227-ai/)**
+ · [Installation Guide](https://1z99.github.io/project-ai-r36s/projects/227-ai/guide.html)
+ · [Screenshots](https://1z99.github.io/project-ai-r36s/projects/227-ai/gallery.html)
+ · [All R36S Projects](https://1z99.github.io/project-ai-r36s/)
+
 ---
 
 ## Highlights

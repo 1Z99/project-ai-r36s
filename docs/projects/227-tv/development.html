@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080d0b">
+  <title>Build Notes | 227 TV | 1Z99</title>
+  <meta name="description" content="The tested R36S environment for 227 TV, the globe rendering pipeline, the private software libmpv runtime build, installer safety, verification results and local development workflow.">
+  <link rel="icon" href="../../media/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../site.css">
+  <script src="../../site.js" defer></script>
+</head>
+<body data-project="227-tv" data-captures="projects/227-tv/screenshots.json">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <a class="brand workshop-brand" href="../../index.html" aria-label="1Z99 home"><span class="brand-number">1Z99</span><span class="brand-suffix">R36S<span>APPS &amp; EXPERIMENTS</span></span></a>
+    <nav class="main-nav" id="main-nav" aria-label="Main navigation"><a href="../../index.html#projects">Projects</a><a href="../../index.html#about">About</a><a href="../../index.html#device">My R36S</a></nav>
+    <div class="header-actions"><button type="button" class="search-trigger" data-search-open aria-label="Search site">Search <kbd>/</kbd></button><button type="button" class="menu-toggle" data-menu-toggle aria-controls="site-menu" aria-expanded="false">Menu</button></div>
+  </header>
+  <div class="project-context page-width">
+    <nav class="breadcrumb" aria-label="Breadcrumb"><ol><li><a href="../../index.html">1Z99</a></li><li><a href="../../index.html#projects">Projects</a></li><li><a href="index.html">227 TV</a></li><li><span aria-current="page">Build notes</span></li></ol></nav>
+    <nav class="project-nav" aria-label="227 TV navigation"><span class="project-nav-label">227 TV</span><a href="index.html">Overview</a><a href="guide.html">Install</a><a href="reference.html">Manual</a><a href="development.html" aria-current="page">Build notes</a><a href="gallery.html">Screenshots</a></nav>
+  </div>
+  <main id="main" class="docs-layout">
+    <aside class="docs-sidebar">
+      <span class="eyebrow">Build Notes</span>
+      <nav aria-label="On this page"><a href="#tested-build">Tested build</a><a href="#architecture">Architecture</a><a href="#display-ownership">Display ownership</a><a href="#globe">Globe rendering</a><a href="#playback">Playback runtime</a><a href="#runtime-build">Private runtime build</a><a href="#safety">Installer safety</a><a href="#verification">Verification</a><a href="#local-build">Local builds and preview</a><a href="#source-map">Source map</a><a href="#scope">Scope and omissions</a></nav>
+    </aside>
+    <article class="docs-article">
+      <div class="doc-heading">
+        <p class="eyebrow">227 TV / Build Notes</p>
+        <h1>One handheld screen. No compositing mistakes.</h1>
+        <p class="lede">How the atlas renders, why it insists on owning the display, and what was actually verified on the handheld. Implementation facts are evidence, not blanket compatibility claims.</p>
+        <div class="doc-meta"><span>Source audit: October 21, 2026</span><span>227 TV 1.0.4 / df66d40</span><a href="https://github.com/1Z99/r36s-tv">Source &amp; releases &#8599;</a></div>
+      </div>
+
+      <section id="tested-build" data-search-section>
+        <h2>Tested build</h2>
+        <p>The recorded hardware run targeted <strong>R36S, Debian 13 (trixie) aarch64, dArkOSRE</strong>, including the tested build <code>03082026</code> and kernel <code>4.4.189</code>, dated <strong>October 19, 2026</strong>.</p>
+        <div class="table-wrap"><table><caption>Recorded environment and versions</caption><thead><tr><th scope="col">Item</th><th scope="col">Verified value</th></tr></thead><tbody>
+          <tr><th scope="row">Handheld</th><td>R36S, 640 x 480 display, dArkOSRE.</td></tr>
+          <tr><th scope="row">Ports path in the historical run</th><td><code>/roms/ports</code>, an exFAT ROM partition, not <code>/roms2/ports</code>. This is not the current TV install destination; TV now uses the shared 227 system.</td></tr>
+          <tr><th scope="row">Graphics</th><td>Existing SDL2 / SDL2_ttf and FFmpeg, firmware Mali with <code>libgbm.so.1</code> lacking the newer GBM ABI.</td></tr>
+          <tr><th scope="row">Debian libmpv2</th><td><code>0.40.0-3+deb13u1</code> failed preflight with <code>undefined symbol: gbm_surface_create_with_modifiers</code>.</td></tr>
+          <tr><th scope="row">Bundled playback runtime</th><td>Locally built software-rendering libmpv, recorded as <code>0.40.0-3+deb13u1+tv227sw1</code>, tested on the handheld.</td></tr>
+          <tr><th scope="row">Published release</th><td><a href="https://github.com/1Z99/r36s-tv/releases/tag/v1.0.4"><strong>227 TV v1.0.4</strong> &#8599;</a>, published October 20, 2026. Local <code>release.json</code>, <code>tv_installer.VERSION</code> and the GitHub latest-release API agreed during this audit; no draft/prerelease was selected.</td></tr>
+          <tr><th scope="row">Local release payload sizes</th><td>Application archive: <strong>11,454,458 bytes</strong>; manager: <strong>731,944 bytes</strong>. These are the local v1.0.4 release record's transfer sizes, not installed size or an SD-space guarantee.</td></tr>
+        </tbody></table></div>
+        <p>The Debian preflight failure is a firmware ABI mismatch, not an observed kernel syscall failure; the custom build avoids that dependency without replacing drivers. On-device verification covered KMSDRM globe/country/search rendering, local video, live France 24 with active ALSA audio, and returning from playback to the globe. Other firmware images, 32-bit builds or original Ubuntu-based ArkOS are <strong>not</strong> supported without a matching playback runtime build.</p>
+      </section>
+
+      <section id="architecture" data-search-section>
+        <h2>Architecture</h2>
+        <p>The Python code uses the <strong>standard library only</strong>, with no pip dependencies, but the application is not dependency-free: it needs native SDL2/SDL2_ttf, a compatible libmpv and firmware media/audio libraries. SDL and libmpv are called through <code>ctypes</code>; the shell launcher invokes <code>flock</code>. Network operations run in workers and return results to the UI queue. There is no project-hosted playback server: unlike the desktop Qt Multimedia/HLS-proxy implementation, the handheld contacts playlists and stream hosts directly.</p>
+        <div class="table-wrap"><table><caption>Module roles in this source tree</caption><thead><tr><th scope="col">Module</th><th scope="col">Responsibility</th></tr></thead><tbody>
+          <tr><th scope="row"><code>app.py</code></th><td>SDL display, render loop, pointer, keyboard, menus, matrix and playback orchestration.</td></tr>
+          <tr><th scope="row"><code>tv_backend.py</code></th><td>Country-playlist fetch/cache, retained global-index API, local query filters, state/health JSON and globe geometry. Normal startup does not call the global refresh API or read its old cache.</td></tr>
+          <tr><th scope="row"><code>tv_globe.py</code></th><td>Globe rendering: cached orthographic images, crossfades, idle rotation and close-up polygons.</td></tr>
+          <tr><th scope="row"><code>tv_filter.py</code> / <code>native/libtvglobe.so</code></th><td>Optional ARM64 CPU scaler/projector with SDL fallbacks, built from <code>globe_filter.c</code>.</td></tr>
+          <tr><th scope="row"><code>tv_media.py</code></th><td>libmpv availability probe and software RGBA render API wrapper.</td></tr>
+          <tr><th scope="row"><code>tv_quality.py</code></th><td>HLS rendition selection and the one-rendition master rewrite.</td></tr>
+          <tr><th scope="row"><code>tv_manager.py</code> / <code>tv_installer.py</code> / <code>tv_system.py</code> / <code>tv_dependencies.py</code></th><td>Graphical manager, release-verified installation and rollback, EmulationStation registration/backup and restricted dependency setup.</td></tr>
+          <tr><th scope="row"><code>tv_release.py</code> / <code>build_release.py</code> / <code>install227tv.sh</code></th><td>Release schema, canonical repository/tag policy, generated manifests/archives and standalone bootstrap template. No independent publisher signature is implemented.</td></tr>
+        </tbody></table></div>
+      </section>
+
+      <section id="display-ownership" data-search-section>
+        <h2>Display ownership</h2>
+        <p>On the handheld the launcher uses <code>SDL_VIDEODRIVER=kmsdrm</code> and <code>SDL_RENDER_DRIVER=software</code>, selecting the verified firmware <code>/usr/lib/aarch64-linux-gnu/libMali.so</code> for SDL EGL/GL when present. Before creating any SDL window, the app rejects unowned KMSDRM launches: it records the real EmulationStation ancestor PID and start time, and exits if that owning process disappears or the launcher is orphaned. KMSDRM startup can queue misleading hide/focus-loss events, so ownership is decided by the ES process relationship, never by window-manager focus.</p>
+        <p>Background joystick delivery is disabled; exiting releases players, audio and SDL resources. The launcher appends stdout/stderr to the data root's <code>app.log</code>, guards duplicate launches with <code>flock</code>, creates a private <code>XDG_RUNTIME_DIR</code> only when none is valid, and returns control to ES on exit.</p>
+        <div class="callout warning"><p><strong>The refusal is before window creation, but not a sandbox.</strong> Normal deployment simply starts the app from the menu. Remote starts, <code>nohup</code>, <code>&amp;</code> or background services are explicitly not supported paths.</p></div>
+      </section>
+
+      <section id="globe" data-search-section>
+        <h2>Globe rendering</h2>
+        <p>Drawing the spinning Earth every frame on this CPU is a budget exercise, so the renderer caches:</p>
+        <ul>
+          <li><strong>Cached presentation.</strong> Globe images use smooth CPU-filtered scaling at native display size, cached until camera, selection or quality changes. Menu/detail transitions crossfade over 200 ms instead of popping.</li>
+          <li><strong>Native overlay lines.</strong> Coastlines, country borders and the Earth rim are drawn after scaling at one native pixel, so low globe-resolution settings cannot thicken them; country close-ups switch to a once-built geographic polygon fill with lakes and holes retained.</li>
+          <li><strong>Native helper, graceful fallback.</strong> A compiled ARM64 <code>native/libtvglobe.so</code> provides the CPU projector/scaler; a missing or wrong-architecture library falls back to SDL's filtered scaler, so desktop previews work without it. Recorded handheld benchmarks: about 6.8 ms for a 224x224 to 406x406 scale versus roughly 25 ms through SDL filtering, and about 6.5 ms for the native 160x160 world projector before scaling. These are scaling timings, not whole-frame guarantees; SDL composition and presentation add more.</li>
+          <li><strong>Polite idle motion.</strong> The world rotates at 2.4 degrees/second (adjustable Off, 0.5x-8x), with up to 15 Hz updates and an eased start after two seconds without globe interaction. It requires world browsing, no modal/country/flight, zoom at most 1.5x, active input focus, no drag and a pointer away from the globe. Unrelated list input does not reset the globe-interaction timer.</li>
+          <li><strong>Crystal-green style.</strong> The Earth palette is ocean <code>5,19,12</code> / land <code>13,62,34</code> with mint country borders <code>64,196,104</code>, a matching mint rim, and an amber selected country and channel-count numeral. The square panel behind the Earth is translucent (alpha 90), so the interface's scanline backdrop shows through.</li>
+        </ul>
+        <p>Manual zoom is eased and starts at x0.8. Movement detail is capped at 224 px regardless of configured stationary resolution; count labels, cursor and text stay native. The cached geometry also powers the selected country's dark-green border trace at 12 Hz without rebuilding the image.</p>
+      </section>
+
+      <section id="playback" data-search-section>
+        <h2>Playback runtime</h2>
+        <p>Video plays through libmpv's <code>api_type=sw</code> software RGBA render API: pixels arrive in application memory, then SDL composites them. This deliberately avoids the GBM/EGL hardware path that the firmware's libgbm cannot satisfy, and works with SDL's KMSDRM window instead of an mpv vo window or GPU surface. Audio goes through ALSA; exiting playback closes the decoder, audio output and pending quality selection.</p>
+        <p>Single playback uses a <strong>640 x 480</strong> output surface. Matrix playback creates up to four <strong>298 x 218</strong> surfaces; the historical four-decoder benchmark instead used <strong>320 x 180</strong> test outputs at about 14 frames/s each with audio-focus handoff. It was neither a four-live-stream test nor a matrix-display benchmark. Output dimensions do not cap source decoding cost. Focus first disables audio on all players and waits for active audio to stop before enabling the selected cell.</p>
+        <p>Rendition choice never transcodes: Auto prefers the highest advertised source at or below 480p for single playback, 240p in matrix, while higher-only or unknown sources can still play. The UI lists discovered source resolution/FPS combinations, not fabricated frame-rate controls. Where HLS uses separate audio, a private one-rendition master preserves associated media groups and is removed when the player closes. Quality changes restart only the focused cell and do not rewrite favorite/recent snapshots. Unknown dimensions are observed after decode; high-resolution sources receive a warning, not a hard block.</p>
+        <p>Single video is already fullscreen; watch chrome hides after about 2.5 seconds without input. There is no fullscreen-toggle or matrix-cell maximize action. A pauses/resumes with button navigation; pointer activation in the matrix selects a cell. B dismisses a modal first, then stops playback from the unobscured watch view. Start alone keeps decoders/audio running. See <a href="reference.html#controls">the contextual control map</a>.</p>
+      </section>
+
+      <section id="runtime-build" data-search-section>
+        <h2>Private runtime build</h2>
+        <p><code>build_runtime.py</code> is the recipe that produced the bundled runtime, run on the handheld by an explicit authorized session. It is not part of installation and never uses sudo, <code>apt install/update/upgrade</code>, pip or system library writes; missing tools fail the build rather than being installed.</p>
+        <ol class="steps">
+          <li><strong>Pinned acquisition.</strong> It downloads <code>libmpv2=0.40.0-3+deb13u1</code> documentation and dev/tool packages with <code>apt download</code>, pinning every candidate version into <code>packages.lock.json</code> (rebuilds accept <code>--lock</code> to reuse it or the output manifest). An unavailable locked package fails rather than substituting.</li>
+          <li><strong>Source verification.</strong> mpv 0.40.0 plus Debian's <code>0.40.0-3+deb13u1</code> source and patches are fetched over HTTPS, and archive SHA-256 values are validated against Debian's <code>.dsc</code> (from Debian HTTPS; no independent OpenPGP trust verification is claimed).</li>
+          <li><strong>Build.</strong> Prepared by extracting with <code>dpkg-deb -x</code> into a new private work dir (resumable with <code>--reuse-work</code>, FFmpeg headers matched to the installed runtime, using Debian Snapshot when versions have left the main repo), then Meson builds with <code>-Dauto_features=disabled -Dlibmpv=true -Dcplayer=false -Dalsa=enabled -Dgl=disabled -Dlua=lua52 -Dbuildtype=release -Dstrip=true -Dbuild-date=false</code>. Playback uses the software RGBA API and ALSA; mpv's optional DRM/GBM/EGL/GL/Vulkan/Wayland/X11 display backends are disabled, not the firmware libraries used by SDL.</li>
+          <li><strong>Link to firmware.</strong> Required shared dependencies link against the existing firmware libraries. Only the locally built <code>libmpv.so.2</code> and versioned targets ship, as regular copies rather than symlinks, for exFAT support. No SDL/EGL/GLES/Mali/DRM/GBM, glibc or systemd libraries ship.</li>
+          <li><strong>Publishing gate.</strong> <code>ldd -r</code> must resolve all symbols, then a fresh Python process runs <code>tv_media.availability()</code> from stdin with no display or audio device. Any failure retains the private work tree and never publishes the output.</li>
+        </ol>
+        <p>The finished <code>runtime/manifest.json</code> records exact versions, sources, build options, dependency diagnostics and the passing preflight. If a later probe reports <code>ENOSYS</code> or dies by signal, investigate kernel/syscall compatibility separately; do not upgrade firmware or swap libc as a workaround.</p>
+      </section>
+
+      <section id="safety" data-search-section>
+        <h2>Installer safety</h2>
+        <h3>Online discovery versus pinned files</h3>
+        <p>The generated <code>Install 227 TV.sh</code> embeds its own release's manager filename, size and SHA-256 plus the release-policy helper. These immutable pins attest that <em>built-in</em> manager, not every future release. In normal online mode the bootstrap fetches <code>https://github.com/1Z99/r36s-tv/releases/latest/download/release.json</code> and accepts the selected newer manager's size/hash from that HTTPS response. It validates format 1, the <code>debian13-arm64-darkosre</code> target, stable version, canonical repository/tag base URL, exact versioned archive names and bounded positive sizes/hash syntax. Archive bytes must then match those values.</p>
+        <p>The verified manager contains the application's release record. Its bundle fields must agree with discovered metadata, and its code version must match. The application archive is size/hash-checked, extracted with path/type/count/unpacked-size restrictions, and its exact file set and individual hashes are verified before publication. Runtime libraries, fonts, intro, map, globe helper and notices travel inside that archive. <strong>HTTPS/repository control remains the online trust root:</strong> an old script does not cryptographically authorize future releases independently of that endpoint. Sidecar checksums are not an independent authenticity source, and there is no release-signature verification.</p>
+        <p>Explicit <code>TV227_RELEASE_BASE</code>/<code>--base</code> or a matching adjacent manager archive selects pinned mode; <code>--source</code> selects an explicit local tree instead. A local three-file bundle does not need a separate metadata file: the verified manager already embeds it. A mirror must supply files matching the script/manager pins; arbitrary newer bytes cannot replace them. Normal bootstrap launches re-extract verified manager code rather than trusting mutable stored modules, retaining its download cache. When latest discovery selects another version, it also caches the manager matching the original script's pins for offline fallback.</p>
+        <p>A failed network discovery may fall back only to that verified built-in manager cache; malformed metadata fails closed rather than being treated as a successful offline check. Latest-mode Install/Update checks the endpoint again at action time and fails without modifying TV if that check fails. Update refuses downgrades, but returns <code>up-to-date</code> immediately on equal versions: it does <strong>not</strong> hash the installed application or audit menu integrity in that case. Repair restores the recorded installed version from a matching verified cache or its recorded base, never latest. Legacy installs without a record require the installed version to be recovered by AST parsing and its exact tag metadata fetched; installed code is not executed to identify it.</p>
+        <h3>Runtime and publication boundaries</h3>
+        <p><code>install.sh</code> validates any present <code>runtime/</code> manifest: package versions/source, exact file hashes, the library/source/license allowlist and supported relative soname aliases. <code>sh install.sh --list-runtime</code> performs packaging validation without loading the ARM64 library. A present runtime with a missing/invalid manifest fails closed, even if system libmpv is usable. An entirely absent runtime is different: source/host installs may use system libmpv. Official release assembly requires the tested runtime and an AArch64 globe helper. The normal launcher sets the private library path before starting Python; it is not a fresh manifest verifier on every app launch.</p>
+        <p>System-dependency setup is capability-first: only absent, explicitly mapped Debian 13 packages are planned. The complete APT plan is simulated, audited, version-pinned and simulated again; upgrades, removals, reinstalls and protected graphics, Mali, EGL, GLES, GBM, DRM, libc, systemd and firmware packages are rejected outright. Broken existing libraries are errors, not permission to replace them. The EmulationStation registration is preserved or created as needed (see <a href="guide.html#shared-system">the shared 227 menu</a>), and every XML change is backed up with a timestamp before anything moves. These are the same boundaries the manager enforces during update and repair.</p>
+        <p>The shell can bootstrap absent Python/curl/CA certificates under a restricted audited APT plan; an existing old Python is rejected, not upgraded. Manager-only dependencies are checked before its display opens; app/runtime checks follow a confirmed install/update/repair. The source <code>install.sh</code> only probes capabilities and does not install packages. Root or preauthorized <code>sudo -n</code> is required for privileged work, with no password prompt/storage.</p>
+        <p>Maintenance holds the same data-root app lock as the launcher, a destination install lock and serialized shared-menu work. Close TV first and use the same <code>TV227_DATA</code> override if customized. Publication stages on the card, backs up the previous app and owned launcher/artwork, and attempts restoration on handled failure; failed recovery retains a reported recovery directory. Cancellation is deferred through APT, final publication/rollback and removal. These are not persistent power-loss transactions, and app rollback does not undo system packages. Uninstall retains home-directory TV state, manager storage, shared system/themes and other apps; it is not secure erasure.</p>
+      </section>
+
+      <section id="verification" data-search-section>
+        <h2>Verification record</h2>
+        <div class="table-wrap"><table><caption>Recorded verification</caption><thead><tr><th scope="col">When</th><th scope="col">What ran</th></tr></thead><tbody>
+          <tr><th scope="row">On-device, 2026-10-19</th><td>KMSDRM globe, country and search rendering; local video decode; live France 24 with active ALSA audio output; clean return from playback to the globe. The physical B button cancelled the device test.</td></tr>
+          <tr><th scope="row">On-device decoder probe</th><td>Four simultaneous 320x180 test decoders at approximately 14 frames/s each, including an audio-focus handoff.</td></tr>
+          <tr><th scope="row">On-device native build</th><td>The private libmpv recipe built on the handheld, passing <code>ldd -r</code> and the no-display software-render probe before publication.</td></tr>
+        </tbody></table></div>
+        <p>The v1.0.4 release notes record 366 host tests. The October 21 documentation audit independently ran discovery at clean source revision <a href="https://github.com/1Z99/r36s-tv/commit/df66d40"><code>df66d40</code></a>: <strong>366 tests ran in 48.2 seconds, OK with one skip</strong>. The skipped test was <code>test_native_world_projector_avoids_mesh_rasterization</code> because a matching host projector was unavailable. This is a host regression record, not another hardware acceptance run; the shipped ARM64 helper is not a host binary.</p>
+        <p>The suite covers backend/cache/state, media, globe/filter/quality/style/system, packaging, lifecycle, bootstrap and install/update/repair boundaries. HTTP/APT are mocked in installer tests; media tests use generated local clips and null audio. Packaging tests use mock SSH/scp and temporary host destinations, never a handheld. Tests may create temporary fixtures or compile a host helper in a temporary directory; they do not install OS packages or rebuild the playback runtime.</p>
+        <div class="code-block"><div class="code-heading"><span>Host suite, without device access</span><button type="button" data-copy>Copy</button></div><pre><code>PYTHONDONTWRITEBYTECODE=1 SDL_VIDEODRIVER=dummy \
+  SDL_RENDER_DRIVER=software TV_MEDIA_AO=null \
+  python3 -B -m unittest discover</code></pre></div>
+        <p>For native globe integration coverage, build a <em>host</em> helper at a temporary path and set <code>TV227_GLOBE_FILTER</code> for the suite. Never overwrite the shipped ARM64 helper for a PC test. Syntax and runtime packaging can be checked without rewriting assets or loading ARM64 libraries:</p>
+        <div class="code-block"><div class="code-heading"><span>Read-only syntax and runtime packaging</span><button type="button" data-copy>Copy</button></div><pre><code>for script in install.sh install227tv.sh deploy.sh build_globe_filter.sh 'Melkor 227 TV.sh'; do bash -n "$script" || break; done
+sh install.sh --list-runtime</code></pre></div>
+        <p><code>sh install.sh --check-only</code> is a separate no-display capability probe. On a PC, use a disposable source fixture without the ARM64 <code>runtime/</code> and with working host SDL/libmpv, not this shipped device runtime. Asset regeneration is optional, writes the checkout, and requires explicit upstream inputs; it is not routine validation.</p>
+        <p>Screenshots, decoder benchmarks and on-the-record recordings are bounded:</p>
+        <div class="code-block"><div class="code-heading"><span>Offline preview scene, output outside the checkout</span><button type="button" data-copy>Copy</button></div><pre><code>PREVIEW=$(mktemp -d /tmp/tv227-preview.XXXXXXXX)
+SDL_VIDEODRIVER=dummy SDL_RENDER_DRIVER=software TV_MEDIA_AO=null \
+  python3 -B app.py --desktop --demo --scene browse --screenshot "$PREVIEW/browse.png"</code></pre></div>
+        <p>Screenshot mode requires <code>--demo</code> and an existing output parent. Supported scenes are <code>browse</code>, <code>country</code>, <code>search</code>, <code>matrix</code>, <code>settings</code>, <code>quality</code> and <code>loading</code>. There is no built-in <code>watch</code> scene: the stock matrix demo shows unavailable-signal cells, not decoded content. The website's playback captures use a separate, explicitly opted-in generator.</p>
+        <p>The <a href="gallery.html">website gallery</a> uses <code>dev/render_tv_captures.py --capture-streams --source-dir /path/to/melkor227-tv</code> in the website repository. With compatible host SDL2/SDL2_ttf and libmpv, it starts real France 24 streams through <code>App.finish_player</code>, then calls production <code>App.update</code> and <code>App.draw</code>; installer views use <code>tv_manager.draw</code>. The source checkout's private playback runtime must resolve to a known compatible host library, not the shipped ARM64 binary. No FFmpeg executable is required. Browser selections and card destinations remain scripted; Settings and quality cover an active playback session with opaque menus.</p>
+        <p>The <a href="../../media/227-tv/captures.json">capture record</a> reports 151 observed frames for France 24 French in watch view and 151&#8211;153 per feed for the French, English, Arabic and Spanish matrix, with 640 x 360, 25 fps sources. Counts describe non-empty production <code>Player.frame()</code> RGBA renders, not internal decoder totals or a benchmark. The run used network access and decoding, with null/disabled audio output; the site serves only local media. Source URLs, timestamps, source/image hashes and per-scene playback records are retained, with broadcast credits in <a href="../../media/227-tv/NOTICE.md">NOTICE.md</a>. <code>--validate-only</code> prints a pure plan without loading the app/native libraries, writing files or accessing the network; capture requires <code>--capture-streams</code>.</p>
+        <p><code>--skip-intro</code>, <code>--run-seconds N</code> and <code>--capture-after PATH</code> support bounded desktop tests; stock <code>--demo</code> keeps preview state temporary even when a real data-root override is set, and never tunes its sample stations. The website generator bypasses only that demo tuning guard for its isolated playback sessions. Its captures record real PC decoding, not physical input, audio verification, KMSDRM compatibility or handheld performance. Full hardware acceptance needs a separately authorized session covering audio, controls, single playback, matrix load and clean return to ES. None was performed for this documentation audit.</p>
+      </section>
+
+      <section id="local-build" data-search-section>
+        <h2>Local builds and preview</h2>
+        <p>A checkout is already the Python source build: it still requires host SDL2/SDL2_ttf and the bundled font/map assets. <code>python3 -B app.py --desktop --demo</code> opens a desktop window with sample data and temporary state; <code>SDL_VIDEODRIVER=dummy</code> switches to headless. The optional ARM64 globe helper falls back on a PC; the ARM64 playback runtime cannot be loaded as a host library. Demo does not need live streams or open real favorites/catalog caches.</p>
+        <p>Rebuild the globe helper for another architecture with an existing native compiler (<code>gcc</code>, or <code>CC</code>) from <code>globe_filter.c</code>, which ships with the library:</p>
+        <div class="code-block"><div class="code-heading"><span>Build a host helper without replacing the shipped ARM64 binary</span><button type="button" data-copy>Copy</button></div><pre><code>HOST_HELPER=$(mktemp -d /tmp/tv227-helper.XXXXXXXX)
+bash build_globe_filter.sh "$HOST_HELPER/libtvglobe-host.so"
+TV227_GLOBE_FILTER="$HOST_HELPER/libtvglobe-host.so" \
+  python3 -B app.py --desktop --demo</code></pre></div>
+        <p>The output parent must already exist; rebuilding never touches firmware, and the app-local <code>native/</code> directory is separate from the mpv runtime manifest. For a host staging test without a real card:</p>
+        <div class="code-block"><div class="code-heading"><span>Automated isolated staging and registration checks</span><button type="button" data-copy>Copy</button></div><pre><code>PYTHONDONTWRITEBYTECODE=1 TV_MEDIA_AO=null \
+  python3 -B -m unittest test_packaging test_system</code></pre></div>
+        <p>These fixtures supply temporary card/configuration paths, avoiding the live <code>/etc/emulationstation/es_systems.cfg</code>. Do not assume <code>--prefix /tmp/...</code> alone isolates every integration path. Host staging requires working host libraries and a fixture without the ARM64 runtime; the packaging suite constructs that fixture. Installer tests also use temporary data roots to avoid live app-lock/state writes.</p>
+        <p>Device deployment is a separate, explicitly authorized operation, not a host validation step. <code>deploy.sh</code> accepts <code>TV227_SSH_USER</code>, <code>TV227_SSH_HOST</code>, <code>TV227_SSH_KEY</code> and <code>TV227_PREFIX</code>. It validates local syntax/runtime packaging, transfers a temporary allowlisted bundle, runs its no-display preflight remotely, then installs using already-authorized <code>sudo -n</code>. It does not start TV, restart ES or kill a running app. No deployment or hardware actions were run for this audit.</p>
+      </section>
+
+      <section id="source-map" data-search-section>
+        <h2>Source map</h2>
+        <p>The source and releases live at <a href="https://github.com/1Z99/r36s-tv">github.com/1Z99/r36s-tv &#8599;</a>. This audit used clean source <code>df66d40</code>, README, installation/development/publishing notes, release notes and the local v1.0.4 release record. The source checkout, application archive and generated installer directory are different layouts:</p>
+        <div class="table-wrap"><table><caption>Where to look first</caption><thead><tr><th scope="col">Path in the tree</th><th scope="col">Responsibility</th></tr></thead><tbody>
+          <tr><th scope="row"><code>app.py</code></th><td>Rendering loop, pointer, keyboard, menus, matrix, playback orchestration, screenshot and device-test modes.</td></tr>
+          <tr><th scope="row"><code>tv_backend.py</code>, <code>tv_quality.py</code>, <code>tv_media.py</code>, <code>tv_globe.py</code>, <code>tv_filter.py</code>, <code>tv_style.py</code></th><td>Catalog, rendition and matrix caps, libmpv wrapper, globe pipeline and native helper, shared drawing style.</td></tr>
+          <tr><th scope="row"><code>tv_manager.py</code>, <code>tv_installer.py</code>, <code>tv_system.py</code>, <code>tv_dependencies.py</code>, <code>tv_release.py</code></th><td>Manager/CLI, verified release selection and maintenance, shared-menu changes, dependency policy. Included as program modules in the application bundle.</td></tr>
+          <tr><th scope="row"><code>install.sh</code>, <code>Melkor 227 TV.sh</code></th><td>Bundle's source installer/preflight and self-locating app launcher.</td></tr>
+          <tr><th scope="row"><code>install227tv.sh</code>, <code>build_release.py</code></th><td>Checkout-only bootstrap template and release assembler. Generated <code>Install 227 TV.sh</code>, two archives, sidecars and outer <code>release.json</code> belong in the release output directory, not the unpacked application tree.</td></tr>
+          <tr><th scope="row"><code>build_runtime.py</code>, <code>runtime/manifest.json</code>, <code>runtime/sources/</code></th><td>Current native recipe in the checkout; shipped build record and retained original recipe/corresponding sources in the runtime. Current soname packaging uses regular copies for exFAT; the retained original recipe used symlinks.</td></tr>
+          <tr><th scope="row"><code>globe_filter.c</code>, <code>build_globe_filter.sh</code>, <code>native/libtvglobe.so</code></th><td>The CPU projector/scaler source, helper and ARM64 build.</td></tr>
+          <tr><th scope="row"><code>assets/</code> with <code>NOTICE.md</code>, <code>AI-LICENSE</code>, <code>FONT-LICENSE</code></th><td>Map data notice per Natural Earth, artwork license and DejaVu font heritage.</td></tr>
+          <tr><th scope="row"><code>test_*.py</code></th><td>Checkout-only suites summarized in <a href="#verification">Verification</a>. Focused evidence: <code>test_backend.py</code> for cache/search/state, <code>test_app.py</code> for controls and player cleanup, <code>test_bootstrap.py</code>/<code>test_updates.py</code> for trust and release selection, and dependency/system/installer suites for safety/rollback.</td></tr>
+        </tbody></table></div>
+      </section>
+
+      <section id="scope" data-search-section>
+        <h2>Scope and omissions</h2>
+        <p>Shipped: the atlas, country-only loading, favorites/recent snapshots, local search filters, manual HTTP health rechecks, fullscreen single video, experimental matrix playback with focused audio and rendition preferences, CRT overlay, world-spin settings, shared 227 registration and release-verified maintenance. Not shipped or promised: worldwide search/preloading, universal firmware compatibility, transcoding, a hard SD-only decoder limit, matrix maximize, station uptime/speed guarantees, signed release authentication, power-loss-safe rollback or automatic playback after install. Same-version Update is not an integrity audit; use Repair.</p>
+        <p>The desktop plugin keeps its own life: Omarchy hides the HLS proxy, QtMultimedia embedded playback, and the looping health scanner behind desktop windows. When those parts change upstream, the handheld port considers them separate projects, not silently shared behavior.</p>
+      </section>
+      <nav class="doc-pagination" aria-label="Documentation pages"><a href="reference.html">Previous: Field manual</a><a href="index.html">Back to 227 TV overview</a></nav>
+    </article>
+  </main>
+  <footer class="site-footer"><div><a class="footer-brand" href="../../index.html">1Z99</a><p>R36S apps and experiments.</p></div><nav aria-label="227 TV links"><a href="index.html">227 TV overview</a><a href="reference.html#licenses">Licenses</a><a href="https://github.com/1Z99/r36s-tv">227 TV source</a><a href="https://github.com/1Z99/project-ai-r36s">227 AI source</a></nav><p class="footer-note">227 TV: a little handheld. A globe. Live channels.</p></footer>
+</body>
+</html>

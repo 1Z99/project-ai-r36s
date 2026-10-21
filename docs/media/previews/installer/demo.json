@@ -1,0 +1,68 @@
+{
+  "width": 640,
+  "height": 480,
+  "duration": 14,
+  "fps": 12,
+  "video": "installer-demo.mp4",
+  "hasAudio": false,
+  "productionRenderer": true,
+  "simulatedInstall": true,
+  "simulatedDownloads": true,
+  "packageChanges": false,
+  "networkAccess": false,
+  "deviceAccess": false,
+  "localPC": true,
+  "realWorker": false,
+  "installerLogging": false,
+  "font": "assets/DejaVuSansMono.ttf",
+  "description": "PC-only scripted installer demo, not a real install or speed benchmark.",
+  "frames": [
+    {
+      "name": "home.png",
+      "time": 2,
+      "description": "Main SD explicitly selected; Install, Update / Repair and Uninstall actions visible."
+    },
+    {
+      "name": "confirm.png",
+      "time": 4,
+      "description": "Install confirmation for the synthetic main SD; YES highlighted but never executed."
+    },
+    {
+      "name": "download.png",
+      "time": 8,
+      "description": "Simulated model download at 50 percent with sample transfer speed, elapsed time and ETA."
+    },
+    {
+      "name": "success.png",
+      "time": 12,
+      "description": "Simulated install completion, explicitly naming the PC demo as its source."
+    }
+  ],
+  "timeline": [
+    {
+      "id": "selection",
+      "start": 0,
+      "end": 1
+    },
+    {
+      "id": "home",
+      "start": 1,
+      "end": 3
+    },
+    {
+      "id": "confirm",
+      "start": 3,
+      "end": 5
+    },
+    {
+      "id": "download",
+      "start": 5,
+      "end": 11
+    },
+    {
+      "id": "success",
+      "start": 11,
+      "end": 14
+    }
+  ]
+}

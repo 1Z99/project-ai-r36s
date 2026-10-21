@@ -1,0 +1,236 @@
+{
+  "duration": 78,
+  "fps": 20,
+  "width": 640,
+  "height": 480,
+  "hasAudio": true,
+  "chapters": [
+    {
+      "id": "intro",
+      "title": "Original Intro",
+      "start": 0,
+      "end": 2,
+      "description": "The production 19-frame intro, including its original fade into frame 19."
+    },
+    {
+      "id": "loading",
+      "title": "Load LFM",
+      "start": 2,
+      "end": 4,
+      "description": "Two-second illustrative loading progress for the release-default LFM model; not a benchmark."
+    },
+    {
+      "id": "keyboard",
+      "title": "Type and Send",
+      "start": 4,
+      "end": 12,
+      "description": "Type 'what can you do?' on the production on-screen keyboard and explicitly select SEND."
+    },
+    {
+      "id": "answer",
+      "title": "Sample Reply",
+      "start": 12,
+      "end": 20,
+      "description": "Predefined sample text streams through the production reply renderer; no model runs."
+    },
+    {
+      "id": "read-aloud",
+      "title": "Read Aloud",
+      "start": 20,
+      "end": 36,
+      "description": "Select the speaker glyph and follow word highlighting; offline speech when available, otherwise silent."
+    },
+    {
+      "id": "settings",
+      "title": "USB Microphone Test",
+      "start": 36,
+      "end": 50,
+      "description": "R2 opens settings; navigate to VOICE, select USB, then simulate four seconds each of recording and playback, followed by a verdict. No microphone access."
+    },
+    {
+      "id": "dictation",
+      "title": "Dictate and Review",
+      "start": 50,
+      "end": 64,
+      "description": "Select MIC, simulate recording and transcription, review the draft, then explicitly SEND a second sample question."
+    },
+    {
+      "id": "history",
+      "title": "Reopen History",
+      "start": 64,
+      "end": 73,
+      "description": "Open in-memory sample history, navigate between entries, and reopen the walkthrough conversation."
+    },
+    {
+      "id": "outro",
+      "title": "Close the App",
+      "start": 73,
+      "end": 78,
+      "description": "Pause on the reopened chat, then show STOP and fade out as the scripted app closes."
+    }
+  ],
+  "simulatedMic": true,
+  "sampleReplies": true,
+  "localPC": true,
+  "productionRenderer": true,
+  "model": "fast",
+  "liveModel": false,
+  "microphoneAccess": false,
+  "deviceAccess": false,
+  "speechBackend": "espeak-ng",
+  "highlightTiming": "speech-word-events",
+  "video": "227-ai-walkthrough.mp4",
+  "captions": "227-ai-walkthrough.vtt",
+  "speechDependencySource": "temporary-user-local",
+  "prerecordedMicPlayback": true,
+  "micPlayback": {
+    "start": 44,
+    "end": 48,
+    "text": "This is a microphone test. Your voice stays on the device.",
+    "source": "prerecorded-offline-synthesis",
+    "liveCapture": false,
+    "stats": {
+      "peak": 32744,
+      "rms": 2901.0027495392806,
+      "cross": 2473.5,
+      "dur": 4.0
+    }
+  },
+  "readAloud": {
+    "start": 20.5,
+    "end": 29.7702,
+    "wordTimings": [
+      [
+        20.5,
+        0,
+        1
+      ],
+      [
+        20.583,
+        2,
+        5
+      ],
+      [
+        20.791,
+        6,
+        10
+      ],
+      [
+        21.138,
+        11,
+        15
+      ],
+      [
+        21.342,
+        16,
+        21
+      ],
+      [
+        21.683,
+        22,
+        32
+      ],
+      [
+        22.506,
+        33,
+        38
+      ],
+      [
+        22.817,
+        39,
+        44
+      ],
+      [
+        23.374,
+        45,
+        48
+      ],
+      [
+        23.534,
+        49,
+        56
+      ],
+      [
+        23.947,
+        57,
+        63
+      ],
+      [
+        24.823,
+        64,
+        65
+      ],
+      [
+        24.937,
+        66,
+        69
+      ],
+      [
+        25.129,
+        70,
+        77
+      ],
+      [
+        25.52,
+        78,
+        80
+      ],
+      [
+        25.708,
+        81,
+        85
+      ],
+      [
+        25.919,
+        86,
+        95
+      ],
+      [
+        26.828,
+        96,
+        100
+      ],
+      [
+        27.021,
+        101,
+        103
+      ],
+      [
+        27.131,
+        104,
+        105
+      ],
+      [
+        27.195,
+        106,
+        114
+      ],
+      [
+        27.79,
+        115,
+        120
+      ],
+      [
+        28.291,
+        121,
+        124
+      ],
+      [
+        28.561,
+        127,
+        131
+      ],
+      [
+        28.811,
+        132,
+        134
+      ],
+      [
+        29.034,
+        135,
+        142
+      ]
+    ]
+  },
+  "introFramesRendered": 19
+}

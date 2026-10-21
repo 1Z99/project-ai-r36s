@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080d0b">
+  <title>Build Notes | 227 AI | 1Z99</title>
+  <meta name="description" content="The tested R36S environment, SDL renderer and controller architecture, installer safety model, verification results and local development workflow for 227 AI.">
+  <link rel="icon" href="../../media/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../site.css">
+  <script src="../../site.js" defer></script>
+</head>
+<body data-project="227-ai" data-captures="screenshots.json">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <a class="brand workshop-brand" href="../../index.html" aria-label="1Z99 home"><span class="brand-number">1Z99</span><span class="brand-suffix">R36S<span>APPS &amp; EXPERIMENTS</span></span></a>
+    <nav class="main-nav" id="main-nav" aria-label="Main navigation"><a href="../../index.html#projects">Projects</a><a href="../../index.html#about">About</a><a href="../../index.html#device">My R36S</a></nav>
+    <div class="header-actions"><button type="button" class="search-trigger" data-search-open aria-label="Search site">Search <kbd>/</kbd></button><button type="button" class="menu-toggle" data-menu-toggle aria-controls="site-menu" aria-expanded="false">Menu</button></div>
+  </header>
+  <div class="project-context page-width">
+    <nav class="breadcrumb" aria-label="Breadcrumb"><ol><li><a href="../../index.html">1Z99</a></li><li><a href="../../index.html#projects">Projects</a></li><li><a href="index.html">227 AI</a></li><li><span aria-current="page">Build notes</span></li></ol></nav>
+    <nav class="project-nav" aria-label="227 AI navigation"><span class="project-nav-label">227 AI</span><a href="index.html">Overview</a><a href="guide.html">Install</a><a href="reference.html">Manual</a><a href="development.html" aria-current="page">Build notes</a><a href="gallery.html">Screenshots</a></nav>
+  </div>
+  <main id="main" class="docs-layout">
+    <aside class="docs-sidebar">
+      <span class="eyebrow">Build Notes</span>
+      <nav aria-label="On this page"><a href="#tested-build">Tested build</a><a href="#architecture">Architecture</a><a href="#renderer">Renderer</a><a href="#input">Controller input</a><a href="#downloads">Downloads</a><a href="#safety">Safety model</a><a href="#verification">Verification</a><a href="#local-build">Local builds</a><a href="#source-map">Source map</a><a href="#roadmap">Scope and omissions</a></nav>
+      <a class="sidebar-source" href="https://github.com/1Z99/project-ai-r36s">View source &#8599;</a>
+    </aside>
+    <article class="docs-article">
+      <div class="doc-heading">
+        <p class="eyebrow">227 AI / Build Notes</p>
+        <h1>Small hardware. Explicit engineering.</h1>
+        <p class="lede">How the app renders, how the installer changes a card, and what was actually verified. Implementation details are evidence, not a blanket compatibility claim.</p>
+        <div class="doc-meta"><span>Verified October 18, 2026</span><span>Manager 1.2.0</span><span>Runtime release v1.0.0</span></div>
+      </div>
+
+      <section id="tested-build" data-search-section>
+        <h2>Tested build</h2>
+        <p>The recorded hardware run used an <strong>R36S</strong>. These notes refer to the October 18, 2026 verification of <a href="https://github.com/1Z99/project-ai-r36s/commit/c83568c">source commit <code>c83568c</code></a>. The firmware build string is reproduced exactly, without interpreting it as a calendar date.</p>
+        <div class="table-wrap"><table><caption>Recorded environment and versions</caption><thead><tr><th scope="col">Item</th><th scope="col">Verified value</th></tr></thead><tbody>
+          <tr><th scope="row">Handheld</th><td>R36S, 640 x 480 display.</td></tr>
+          <tr><th scope="row">Display panel</th><td><strong>Panel 4</strong>, identified by the device owner. This is the screen in the reference R36S, not a certification of every Panel 4 unit.</td></tr>
+          <tr><th scope="row">Firmware</th><td>dArkOSRE, build <code>03082026</code>.</td></tr>
+          <tr><th scope="row">Kernel / architecture</th><td><code>4.4.189</code> / <code>aarch64</code>.</td></tr>
+          <tr><th scope="row">Python</th><td><code>3.13.5</code> on the device.</td></tr>
+          <tr><th scope="row">App destination in this run</th><td><code>/roms</code>, exFAT on <code>mmcblk0p3</code>.</td></tr>
+          <tr><th scope="row">Card layout</th><td>One mounted app card; SD2 unavailable during the fresh manager run.</td></tr>
+          <tr><th scope="row">Deployment manager</th><td><code>1.2.0</code>.</td></tr>
+          <tr><th scope="row">Binary release</th><td><a href="https://github.com/1Z99/project-ai-r36s/releases/tag/v1.0.0"><code>v1.0.0</code></a>.</td></tr>
+          <tr><th scope="row">Bundled llama.cpp</th><td><code>0.7.0-dev</code>, build <code>11669</code>, commit <code>620d2225c</code>, aarch64.</td></tr>
+        </tbody></table></div>
+        <p>A secondary-card app installation existed in earlier work, but a <strong>fresh two-card manager installation was not tested end to end</strong>. The software independently discovers both fixed mountpoints; that implementation fact is not a substitute for a complete two-card hardware run.</p>
+        <p>No response-time, tokens-per-second, battery-life or comparative-model numbers are claimed. This record does not certify every R36S board/display variant or another firmware image.</p>
+      </section>
+
+      <section id="architecture" data-search-section>
+        <h2>Architecture</h2>
+        <p>The application is a Python controller-first client using system SDL libraries through <code>ctypes</code>. It resolves <code>project_ai/</code> beside its own file, so its paths are not hard-coded to SD1 or SD2. A separate settings module shares rendering primitives and delegates persistence and engine changes back to the host app.</p>
+        <p>The local engine starts the bundled <code>llama-server</code> as a child process with a private library path. The server binds <code>127.0.0.1:39227</code> with offline mode, no web UI, no multimodal projector and no accelerator device. The Python client checks health and streams chat-completion events over loopback HTTP. Worker threads send status and text to the UI through a queue.</p>
+        <p>Current inference settings use three generation threads and four batch threads, a single parallel slot, batch size 128, microbatch 64, and q8_0 key/value caches. Context defaults to 768 tokens. These are source configuration facts, not performance recommendations for every compatible device.</p>
+        <p>Dictation runs ALSA recording and a local <code>whisper-cli</code> subprocess. Read-aloud synthesizes through the system espeak-ng library in a separate Python invocation and plays a WAV with ALSA. These paths do not call a hosted speech API.</p>
+        <p>The deployment system is separate from the app: shell bootstrap and four Python modules (SDL manager, shared backend, explicit headless CLI and <code>installer_deps.py</code>). The backend runs synchronously in a worker; the graphical manager owns confirmation, navigation and event presentation. This separation lets state transitions be tested without opening SDL. The local shell handles absent Python/curl before Python starts; the dependency helper handles capability checks and restricted APT setup, not GUI elevation.</p>
+      </section>
+
+      <section id="renderer" data-search-section>
+        <h2>Renderer</h2>
+        <p>The handheld uses <strong>SDL2 KMSDRM with software rendering</strong>, not a browser, X11 application or Wayland client. The bootstrap exports <code>SDL_VIDEODRIVER=kmsdrm</code> and <code>SDL_RENDER_DRIVER=software</code>. Desktop mode leaves the desktop SDL environment unchanged. The app launcher also configures the handheld rendering environment.</p>
+        <p>SDL2_ttf provides text surfaces; the app has caches for text and background rendering. Chat messages are measured and wrapped against pixel widths at the 640 x 480 logical layout. Content viewports are clipped so scrolling or long text does not draw over fixed chrome. The intro is a finite sequence of prepared frames; the background afterwards is static, not a continuously decoded video.</p>
+        <p>The bootstrap SHA-256-validates regular and bold DejaVu Sans Mono fonts plus their existing license in <code>MODULES/fonts/</code>. The manager searches bundled font locations before the OS path; the app prefers bundled fonts in its data <code>ROOT</code>, with OS fonts as fallback. This removes a manual system-font prerequisite without bundling SDL or changing the graphics stack.</p>
+        <p>The manager maintains its own bounded text texture cache and redraws in a loop with a 1/30-second sleep between iterations; that is not a measured frame-rate claim. On KMSDRM systems where the Mali library exists at <code>/usr/lib/aarch64-linux-gnu/libMali.so</code>, it sets SDL's EGL/GL driver defaults to that library to avoid a known loader mismatch in this environment. This is a targeted compatibility path, not a replacement GPU stack.</p>
+        <p>The desktop preview imports the production app renderer and settings panel. Its conversation content is sample text. It intentionally avoids starting the device engine, recording audio, or writing device config/history. A preview capture is useful for layout work but is not proof of on-device inference or KMSDRM compatibility. Keep preview images distinct from real device captures.</p>
+      </section>
+
+      <section id="input" data-search-section>
+        <h2>Controller input</h2>
+        <p>The tested controller emits raw SDL joystick button events. The app uses <code>0x603</code> for button-down handling and does not also dispatch <code>0x651</code> GameController button events. Processing both would risk duplicate actions, and the streams do not share every shoulder/D-Pad mapping.</p>
+        <div class="table-wrap"><table><caption>Canonical raw joystick mapping on the tested R36S</caption><thead><tr><th scope="col">Physical control</th><th scope="col">Button index</th></tr></thead><tbody>
+          <tr><th scope="row">B / A / X / Y</th><td>0 / 1 / 2 / 3.</td></tr>
+          <tr><th scope="row">L1 / R1 / L2 / R2</th><td>4 / 5 / 6 / 7.</td></tr>
+          <tr><th scope="row">D-Pad Up / Down / Left / Right</th><td>8 / 9 / 10 / 11.</td></tr>
+          <tr><th scope="row">Select / Start</th><td>12 / 13.</td></tr>
+          <tr><th scope="row">L3 / R3 / Function</th><td>14 / 15 / 16.</td></tr>
+        </tbody></table></div>
+        <p>Not every physical button has an app action. The app also handles joystick hats and polls analog axes, using the controller interface when available or the joystick interface otherwise. Its duplicate-press guard uses event timestamps rather than draw-frame timing, because events may queue during a slow render. The manager translates its raw buttons into its own small navigation vocabulary.</p>
+        <p>When porting to another image or controller, record the actual event stream before changing these numbers. Do not infer face-button meanings from labels used by another frontend. User-facing actions belong in the <a href="reference.html#controls">control reference</a>, while this table describes the tested hardware protocol.</p>
+      </section>
+
+      <section id="downloads" data-search-section>
+        <h2>Downloads and trust</h2>
+        <p>The public bootstrap is <a href="https://github.com/1Z99/project-ai-r36s/releases/download/v1.0.0/install227ai.sh"><code>install227ai.sh</code> on the existing v1.0.0 release</a>. It downloads code rather than a frozen v1.0.0 app bundle. The bootstrap fetches four manager modules from repository <code>main</code>. If any module is absent, including the dependency helper, it downloads and validates the entire matching set before per-file publication. Complete stored sets remain cached. Runtime and model binaries use the release asset base, with Hugging Face as a model fallback. The default binary endpoint is <code>releases/latest/download</code>; the documented runtime release is v1.0.0.</p>
+        <p>For default online installs/updates, the core resolves GitHub <code>main</code> using <code>api.github.com/repos/1Z99/project-ai-r36s/commits/main</code>, validates the commit SHA, then fetches all staged app/assets/licenses/system files from that immutable revision. This is a consistent source snapshot, not a signed release or a fixed version baseline. API/rate-limit or source-fetch failures fail the check; cached source cannot silently prove freshness. Even a no-op needs internet. Local bundles compare local contents instead and are explicitly identified as local, not GitHub, in the UI.</p>
+        <p>Runtime and models have <a href="reference.html#models">pinned SHA-256 values</a>. The runtime sidecar must agree with the pin before the archive is accepted. Installed runtime reuse verifies actual files against its manifest and requires executable server/transcriber binaries. App Python files are compiled for syntax during staging, and system XML is parsed before publication. Raw source files are <strong>not individually hash-pinned or signed</strong>; an immutable commit URL is not independent authenticity verification.</p>
+        <p>The download backend uses bounded attempts and timeouts: 15 seconds to connect, a 30-second low-speed window at 1,024 bytes/second, and a 3,600-second maximum per payload attempt. Bootstrap modules use a shorter 120-second overall timeout. These are limits, not expected install durations.</p>
+        <p>Partial filenames are keyed by source URL, preventing one mirror's partial bytes from being appended to another mirror's response. Known hashes protect completed binary downloads. Raw-file resumes use an available strong ETag or Last-Modified validator with If-Range; without a validator they restart. A refused or out-of-range resume can also restart from zero. Progress comes from the final HTTP response, not a redirect's Content-Length.</p>
+        <p>Changing an environment override changes the trust source. <code>PROJECT_AI_RAW_BASE</code> controls manager/source URLs, <code>PROJECT_AI_REL_BASE</code> controls release assets and model mirrors, and <code>PROJECT_AI_RUNTIME_LOCAL</code> supplies a runtime archive with a mandatory adjacent sidecar matching the same pinned hash. <code>file://</code> bases support local fixtures. A newer release asset cannot silently bypass a stale core's pins.</p>
+      </section>
+
+      <section id="safety" data-search-section>
+        <h2>Safety model</h2>
+        <p>Card discovery checks the real mount table, writable status and fixed mountpoints independently of EmulationStation's ROM layout. The UI requires an explicit card selection and confirmation. The CLI requires an explicit target and <code>--yes</code> for changes. Symlinked managed targets and unsafe target types are refused rather than followed.</p>
+        <p>Before an install/update, a free-space preflight starts from a conservative 650 MiB fresh budget and credits reusable runtime/model files and relevant retained downloads. When the installed runtime and both models verify, additional staging is budgeted at about 25 MiB. These are not exact install sizes; system packages need separate system-partition space. A per-card file lock prevents simultaneous mutations on the same destination. A second shared configuration lock serializes EmulationStation/theme work, including across different cards.</p>
+        <p>Content-based comparison returns <code>up_to_date</code> only if all managed source files, actual model/runtime hashes, owned ES/theme metadata, required executable permissions and config existence match expectations. A no-op skips app publication, not source checks, staging, cache/log activity or locks. ES statistics and unrelated metadata are preserved; harmless XML serialization changes do not create false updates. Missing/integrity/registration fixes report repair. Changed existing payload bytes report <strong>Updated/repaired files</strong>, since no release baseline distinguishes newer source from corruption.</p>
+        <h3>Capability-first system setup</h3>
+        <p>The shell checks installed Python 3.9+ and curl before invoking Python; absent tools may be installed, but existing broken/old Python fails without upgrade. Before manager <code>Display</code> startup, <code>installer_deps.py</code> checks manager SDL libraries and curl. After explicit install/update confirmation, the core calls its <code>all</code> scope for SDL/curl, the eSpeak library with usable English data, ALSA <code>arecord</code>/<code>aplay</code>/<code>amixer</code> and procps <code>pkill</code>. Working capabilities require no OS/package queries, APT calls or system changes. Desktop, help, dry-run and uninstall skip automatic setup; isolated non-card CLI fixtures do not install system dependencies.</p>
+        <p>Only missing capabilities cause OS/APT planning. Automatic setup requires Debian/Ubuntu-family <code>aarch64</code>, dpkg <code>arm64</code>, APT and root or noninteractive <code>sudo -n</code>. Unsupported/no-admin cases give an error and missing-package list without prompting for or storing passwords. Existing broken libraries are fatal, not a reason to reinstall firmware. This is a restricted helper, not a guarantee that every firmware or Linux distribution can install.</p>
+        <p>APT first simulates with <code>--no-upgrade --no-remove --no-install-recommends</code>. The helper audits and version-pins the full dependency closure and repeats simulation immediately before installation. It rejects upgrades/removals and protected graphics/firmware packages, including Mesa/EGL/GLES/GBM/DRM/Mali. Package indexes refresh only if initial simulation fails. Packages are outside the app transaction and SD budget, are shared OS dependencies, and remain after uninstall.</p>
+        <p>Payloads are staged before publication. File writes use temporary files and renames; existing replaced targets are moved into same-filesystem backup locations recorded by an in-memory journal. If a commit raises an exception, the backend attempts restoration in reverse order. Incomplete rollback reports its retained backup paths rather than deliberately deleting the remaining recovery copy.</p>
+        <div class="callout warning"><p><strong>Exception rollback is not crash-proof transactional storage.</strong> The journal is not a persistent recovery database and does not undo system packages. Sudden power loss, a killed process, filesystem failure or removal of a card can interrupt publication. Cancellation waits for running APT installation to finish before being honored and is deferred during commit, rollback and destructive uninstall. Do not power off during system setup or these phases.</p></div>
+        <p>Uninstall does not provide install-style restoration of deleted conversations. It removes owned app/data/cache paths on the selected card and only a matching 227 registration. It does not restore a whole historical EmulationStation config or remove another card's registration. Theme removal respects another remaining 227 registration or installed copy.</p>
+        <p>Manager files are outside the app backend's ownership. Bootstrap publication uses per-file atomic renames, not one atomic replacement of an entire module set. Complete module sets are cached; neither install nor Update / Repair performs manager self-update. Updating the bootstrap and four matching modules is a separate manual task. The backend may invoke the restricted dependency helper's root/<code>sudo -n</code> package operations, but the GUI is not elevated. There is no password prompt, service restart or automatic reboot.</p>
+      </section>
+
+      <section id="verification" data-search-section>
+        <h2>Verification record</h2>
+        <p>On October 18, 2026, <strong>85 automated tests passed</strong> at <code>c83568c</code>, the historical tested app revision, not the latest local source. That total covers the deployment backend, bootstrap and manager state behavior, not an exhaustive model-quality or speech-accuracy evaluation. Website and dependency-helper tests added later are separate from this historical count.</p>
+        <div class="table-wrap"><table><caption>Recorded automated suite</caption><thead><tr><th scope="col">Area</th><th scope="col">Tests</th><th scope="col">Scope</th></tr></thead><tbody>
+          <tr><th scope="row">Deployment backend</th><td>57</td><td>Install/update/removal behavior, download and file handling, validation and safety cases.</td></tr>
+          <tr><th scope="row">Bootstrap</th><td>17</td><td>Launch/argument behavior, local sources, read-only modes and module handling.</td></tr>
+          <tr><th scope="row">Manager state</th><td>11</td><td>Selection, confirmation, progress/result and cancellation-related state behavior without SDL.</td></tr>
+        </tbody></table></div>
+        <p>The physical one-card run included real downloads and hash verification of the runtime plus both default models, a full install, an update preserving conversations, and uninstall while retaining the manager. An actual SDL KMSDRM screenshot was captured, and the workflow was confirmed on the handheld.</p>
+        <p>A later installer regression run at <a href="https://github.com/1Z99/project-ai-r36s/commit/9fb119b"><code>9fb119b</code></a> passed <strong>170 tests</strong>: 46 bootstrap tests and 124 core, dependency-helper and manager-state tests. This includes the internal Tools-menu fix, offline relaunch and safe migration from the legacy bootstrap. It is a separate automated record, not an expansion of the historical hardware verification.</p>
+        <p>This evidence does not establish a fresh two-card manager workflow, all firmware/controller variants, endurance under power failure, continuous voice interaction, or performance rankings. A desktop preview cannot fill those gaps. When reporting a regression, include the exact source revision, firmware string, card mount, action, relevant error and whether the screenshot is a preview or a device capture. Scrub private logs first.</p>
+        <h3>Run the local suite</h3>
+        <p>From the repository root, run the focused bootstrap and installer suites, including <code>test_installer_deps.py</code>. Dependency-helper tests mock host/package boundaries, not real APT installation. Review fixtures before extending destructive-operation coverage, and keep targets temporary rather than using a real card or live EmulationStation configuration. These commands do not assert that every unrelated suite or optional tool is available.</p>
+        <div class="code-block"><div class="code-heading"><span>Focused local regression tests</span><button type="button" data-copy>Copy</button></div><pre><code>PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -p 'test_bootstrap.py' -v
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -p 'test_installer_*.py' -v</code></pre></div>
+      </section>
+
+      <section id="local-build" data-search-section>
+        <h2>Local builds and preview</h2>
+        <p>A checkout is already a source build: there is no application framework or web bundler to install. Python uses the standard library with native system SDL2/SDL2_ttf and bundled font assets. Desktop mode skips automatic dependency/font setup; supply working desktop libraries yourself. The aarch64 inference archive remains a binary dependency for real device inference.</p>
+        <h3>Preview the interface on a computer</h3>
+        <div class="code-block"><div class="code-heading"><span>Run from the repository root</span><button type="button" data-copy>Copy</button></div><pre><code>python3 dev/project_ai_preview.py --scene chat --skip-intro
+python3 dev/project_ai_preview.py --scene settings --settings-page voice</code></pre></div>
+        <p>The preview needs system SDL2/SDL2_ttf and the font assets in <code>assets/</code>. Supported scenes include chat, keyboard, models, history, waiting, speech, boot, mic and settings. <code>--settings-page prompt --edit-prompt</code> opens the system-prompt editor. <code>--screenshot PATH</code> writes a 640 x 480 PNG and exits; its parent directory must already exist. Settings in the preview are session-only, and its replies are demonstration text.</p>
+        <h3>Exercise the graphical manager locally</h3>
+        <div class="code-block"><div class="code-heading"><span>Desktop manager, no handheld connection</span><button type="button" data-copy>Copy</button></div><pre><code>sh install227ai.sh --desktop</code></pre></div>
+        <p>From a checkout, the bootstrap uses the local <code>installer/</code> modules without fetching them and automatically passes the checkout as <code>--source</code> when <code>app/</code> exists. That means unpushed app/assets/system changes are exercised rather than published copies. Opening the UI is not a simulated card install: normal discovery still describes the actual fixed card mountpoints. Use the CLI with isolated paths for mutation tests. Local manager logs live in <code>installer/</code>.</p>
+        <h3>Use an isolated CLI target</h3>
+        <p>For local testing, the core accepts existing, writable absolute directories outside protected system locations. Prepare a temporary card directory, themes directory and a minimal XML configuration. The example below touches only its temporary test tree when preparing fixtures; the final command is read-only validation.</p>
+        <div class="code-block"><div class="code-heading"><span>Local fixture and dry-run</span><button type="button" data-copy>Copy</button></div><pre><code>mkdir -p /tmp/227-test/card /tmp/227-test/themes
+printf '&lt;systemList&gt;&lt;/systemList&gt;\n' &gt; /tmp/227-test/es_systems.cfg
+sh install227ai.sh --cli --roms /tmp/227-test/card --action install --dry-run \
+  --es-cfg /tmp/227-test/es_systems.cfg --themes /tmp/227-test/themes</code></pre></div>
+        <p>Replacing <code>--dry-run</code> with <code>--yes</code> performs a real installation into that fixture, can download missing binaries, and consumes space. Dry-run only discovers and validates: it does not test transfers, staging or capacity. Never substitute a live configuration path by accident.</p>
+        <h3>Make a fully local bundle</h3>
+        <p>A self-contained manager can keep <code>install227ai.sh</code> and all four Python manager modules together, including <code>installer_deps.py</code>, with a <code>bundle/</code> release tree beside them. The deployed manager retains <code>tools/227-ai-manager/install.bootstrap</code>; its non-<code>.sh</code> filename prevents EmulationStation from exposing the support folder as another tool. The updated public bootstrap publishes that file and the Tools shortcut before removing legacy internal <code>install.sh</code>. See <a href="guide.html#manager-menu">migration instructions for existing users</a>. Include complete <code>app/</code>, <code>assets/</code>, <code>licenses/</code> and <code>system/</code> directories, including regular/bold fonts and their existing license. Put the runtime archive and its pinned <code>.sha256</code> sidecar plus both default model files at the bundle root. The UI/CLI recognize this bundle automatically, or you can pass <code>--source PATH</code>. Results explicitly compare this local bundle, not GitHub.</p>
+        <p>An incomplete local application bundle fails rather than mixing local source files with remote source files. Missing binaries can still trigger downloads, so a directory called bundle is not by itself an offline guarantee. For release assembly and redistribution, consult <a href="https://github.com/1Z99/project-ai-r36s/blob/main/PUBLISHING.md">PUBLISHING.md</a> and retain the <a href="reference.html#licenses">third-party license notices</a>.</p>
+      </section>
+
+      <section id="source-map" data-search-section>
+        <h2>Source map</h2>
+        <div class="table-wrap"><table><caption>Where to look first</caption><thead><tr><th scope="col">Source</th><th scope="col">Responsibility</th></tr></thead><tbody>
+          <tr><th scope="row"><a href="https://github.com/1Z99/project-ai-r36s/blob/main/install227ai.sh"><code>install227ai.sh</code></a></th><td>Arguments, local module detection, manager bootstrap/storage and SDL launch environment.</td></tr>
+          <tr><th scope="row"><a href="https://github.com/1Z99/project-ai-r36s/blob/main/installer/installer_core.py"><code>installer/installer_core.py</code></a></th><td>Card checks, space budget, download/hash logic, staging, locks, publication and removal.</td></tr>
+          <tr><th scope="row"><a href="https://github.com/1Z99/project-ai-r36s/blob/main/installer/installer_ui.py"><code>installer/installer_ui.py</code></a></th><td>Controller state machine, confirmations, progress, errors and SDL manager display.</td></tr>
+          <tr><th scope="row"><a href="https://github.com/1Z99/project-ai-r36s/blob/main/installer/installer_cli.py"><code>installer/installer_cli.py</code></a></th><td>Explicit headless frontend and CLI event logs.</td></tr>
+          <tr><th scope="row"><a href="https://github.com/1Z99/project-ai-r36s/blob/main/installer/installer_deps.py"><code>installer/installer_deps.py</code></a></th><td>Capability checks, safe missing-package plans and restricted noninteractive APT setup.</td></tr>
+          <tr><th scope="row"><a href="https://github.com/1Z99/project-ai-r36s/blob/main/app/project_ai_r36s.py"><code>app/project_ai_r36s.py</code></a></th><td>Rendering, engine lifecycle, chat persistence, keyboard, audio and input.</td></tr>
+          <tr><th scope="row"><a href="https://github.com/1Z99/project-ai-r36s/blob/main/app/project_ai_settings.py"><code>app/project_ai_settings.py</code></a></th><td>Settings pages, prompt editor, options and microphone test.</td></tr>
+          <tr><th scope="row"><a href="https://github.com/1Z99/project-ai-r36s/tree/main/dev"><code>dev/</code></a></th><td>PC preview and intro frame preparation.</td></tr>
+          <tr><th scope="row"><a href="https://github.com/1Z99/project-ai-r36s/tree/main/tests"><code>tests/</code></a></th><td>Backend, bootstrap and manager-state regression suites.</td></tr>
+          <tr><th scope="row"><a href="https://github.com/1Z99/project-ai-r36s/tree/main/system"><code>system/</code></a>, <a href="https://github.com/1Z99/project-ai-r36s/tree/main/assets"><code>assets/</code></a>, <a href="https://github.com/1Z99/project-ai-r36s/tree/main/licenses"><code>licenses/</code></a></th><td>Launchers/theme metadata, interface assets and third-party terms.</td></tr>
+        </tbody></table></div>
+        <p>Links above follow published <code>main</code>. For historical comparisons, use the <a href="https://github.com/1Z99/project-ai-r36s/tree/c83568c">recorded tested revision</a>, not a claim about the latest source. The local default online core stages a consistent app-source commit, but this does not lock manager and binary release channels to that same revision.</p>
+      </section>
+
+      <section id="roadmap" data-search-section>
+        <h2>Scope and omissions</h2>
+        <p>This is a description of the current boundaries, not a schedule or promise of future releases. The app includes local text chat, short English dictation, selected-reply read-aloud, settings and saved conversations. The manager includes explicit card selection, install, preserving update/repair and destructive removal.</p>
+        <p><strong>Not included:</strong> cloud synchronization, online search, automatic conversation backup, encrypted chat storage, an always-on microphone, continuous voice dialogue, automatic downloads of optional model profiles, manager self-update, or crash-proof recovery after a power cut. The current expression-helper bug means a working calculator should not be advertised.</p>
+        <p>Website navigation, search, screenshot slots and documentation are website features, not new handheld capabilities. Unfilled screenshot slots are placeholders, not evidence that an untested workflow has been verified. Proposals can be discussed in <a href="https://github.com/1Z99/project-ai-r36s/issues">the issue tracker</a>, with reproducible reports and clear separation between desired behavior and shipped behavior.</p>
+      </section>
+      <nav class="doc-pagination" aria-label="Documentation pages"><a href="reference.html">Previous: Field manual</a><a href="gallery.html">Next: Screenshots</a></nav>
+    </article>
+  </main>
+  <footer class="site-footer"><div><a class="footer-brand" href="../../index.html">1Z99</a><p>R36S apps and experiments.</p></div><nav aria-label="227 AI links"><a href="guide.html">Install 227 AI</a><a href="reference.html#licenses">Licenses</a><a href="https://github.com/1Z99/project-ai-r36s">227 AI source</a></nav><p class="footer-note">227 AI: a little handheld. A local assistant. No cloud account.</p></footer>
+</body>
+</html>

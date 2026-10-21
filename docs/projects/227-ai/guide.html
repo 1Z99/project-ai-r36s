@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080d0b">
+  <title>Get Started | 227 AI | 1Z99</title>
+  <meta name="description" content="Install 227 AI on an R36S, choose either mounted SD card, start an offline chat, and safely update, back up or remove the app.">
+  <link rel="icon" href="../../media/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../site.css">
+  <script src="../../site.js" defer></script>
+</head>
+<body data-project="227-ai" data-captures="screenshots.json">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <a class="brand workshop-brand" href="../../index.html" aria-label="1Z99 home"><span class="brand-number">1Z99</span><span class="brand-suffix">R36S<span>APPS &amp; EXPERIMENTS</span></span></a>
+    <nav class="main-nav" id="main-nav" aria-label="Main navigation">
+      <a href="../../index.html#projects">Projects</a><a href="../../index.html#about">About</a><a href="../../index.html#device">My R36S</a>
+    </nav>
+    <div class="header-actions"><button type="button" class="search-trigger" data-search-open aria-label="Search site">Search <kbd>/</kbd></button><button type="button" class="menu-toggle" data-menu-toggle aria-controls="site-menu" aria-expanded="false">Menu</button></div>
+  </header>
+  <div class="project-context page-width">
+    <nav class="breadcrumb" aria-label="Breadcrumb"><ol><li><a href="../../index.html">1Z99</a></li><li><a href="../../index.html#projects">Projects</a></li><li><a href="index.html">227 AI</a></li><li><span aria-current="page">Get started</span></li></ol></nav>
+    <nav class="project-nav" aria-label="227 AI navigation"><span class="project-nav-label">227 AI</span><a href="index.html">Overview</a><a href="guide.html" aria-current="page">Install</a><a href="reference.html">Manual</a><a href="development.html">Build notes</a><a href="gallery.html">Screenshots</a></nav>
+  </div>
+  <main id="main" class="docs-layout">
+    <aside class="docs-sidebar">
+      <span class="eyebrow">Get Started</span>
+      <nav aria-label="On this page">
+        <a href="#before-you-start">Before you start</a><a href="#installation">Installation</a><a href="#choose-card">Choose a card</a><a href="#first-launch">First launch</a><a href="#manager">Deployment manager</a><a href="#updates">Updates and repair</a><a href="#uninstall">Uninstall</a><a href="#backups">Backups</a><a href="#cli">Headless CLI</a><a href="#troubleshooting">Troubleshooting</a>
+      </nav>
+      <a class="sidebar-source" href="https://github.com/1Z99/project-ai-r36s">View source &#8599;</a>
+    </aside>
+    <article class="docs-article">
+      <div class="doc-heading">
+        <p class="eyebrow">227 AI / Get Started</p>
+        <h1>From Tools to your first chat.</h1>
+        <p class="lede">Install once with an internet connection. Then ask, dictate and listen locally, with no cloud account and no connection required for everyday use.</p>
+        <div class="doc-meta"><span>R36S / dArkOSRE</span><span>Manager 1.2.0</span><span>Checked against current source</span></div>
+      </div>
+
+      <section id="before-you-start" data-search-section>
+        <h2>Before you start</h2>
+        <p>These instructions are tested on an <strong>R36S running dArkOSRE</strong>. You need an internet connection for installation and about <strong>700 MB of free space</strong> on your SD card. The easy method uses a computer and an SD card reader. Other ArkOS-style firmware may work, but has not been verified on every handheld. See the <a href="development.html#tested-build">tested setup</a>.</p>
+        <p>Keep the handheld powered during installation. Back up any existing conversations before updating or reinstalling.</p>
+        <details><summary>Technical requirements and SD card details</summary>
+        <ul class="check-list">
+          <li>A writable SD card actually mounted at <code>/roms</code> or <code>/roms2</code>. An empty directory with that name is not sufficient.</li>
+          <li>Approximately <strong>650 MiB of free space</strong> on a fresh app destination for downloads, extraction, staging and headroom; about <strong>25 MiB</strong> of additional staging space when the installed runtime and both models verify. These are budgets, not exact install sizes. Retained partials also reduce the budget. System packages need separate space on the system partition.</li>
+          <li>Python 3.9 or newer, <code>curl</code>, system SDL2 and SDL2_ttf libraries for the graphical manager. The bootstrap can set up missing capabilities on supported firmware; an existing broken or older Python fails without upgrade. Regular/bold DejaVu Sans Mono fonts are bundled on the card, not a manual OS-font requirement.</li>
+          <li>Internet access for the initial downloads, unless you supply a <a href="development.html#local-build">complete local bundle</a>.</li>
+          <li>For the app: <code>libespeak-ng.so.1</code> and usable English voice data, ALSA <code>arecord</code>/<code>aplay</code>/<code>amixer</code>, and procps <code>pkill</code>. The core checks these after confirmed install/update. Dictation additionally needs a usable USB microphone.</li>
+        </ul>
+        <p>Keep the handheld powered and back up any existing conversations before maintenance. The installer changes the selected card's application files and the shared EmulationStation configuration; it does not restart EmulationStation for you.</p>
+        <div class="callout note"><p><strong>Two cards, two separate choices.</strong> The bootstrap chooses a Tools card to store the manager. You then explicitly select the app's destination inside the manager. These can be different cards, regardless of where your games are stored.</p></div>
+        </details>
+      </section>
+
+      <section id="installation" data-search-section>
+        <h2>Installation</h2>
+        <h3 id="easy-install">Easy Install (No Commands Needed)</h3>
+        <ol class="steps" data-easy-install>
+          <li><strong>Copy the installer to your SD card.</strong> On your computer, download <a href="https://github.com/1Z99/project-ai-r36s/releases/download/v1.0.0/install227ai.sh"><code>install227ai.sh</code></a>. Turn off the handheld, put the SD card you use for games into your computer, and copy the downloaded file into its <strong><code>tools</code></strong> folder (alongside the game folders, not inside one). Safely eject the card and put it back in the handheld.</li>
+          <li><strong>Connect to Wi-Fi, install, then restart.</strong> Turn on the handheld and connect it to Wi-Fi. In the game menu, open <strong>Tools</strong> and select <strong>install227ai</strong> (it may be shown as <strong>install227ai.sh</strong>). On the installer screen, use the D-Pad and <kbd>A</kbd> to select the card you want to install on: <strong>Main SD / SD1</strong> or <strong>Second SD / SD2</strong>. Choose <strong>INSTALL</strong>, confirm <strong>Yes</strong>, and wait for success. Only then restart the handheld. Open <strong>227 &gt; 227 AI</strong> to start chatting.</li>
+        </ol>
+        <p>Keep the handheld powered while it installs. Wi-Fi is needed for the downloads; once installed, 227 AI works offline. You do not need SSH or terminal commands for this method. If you cannot see the card's game folders or <code>tools</code> folder on your computer, do not format the card; use the <a href="#advanced-install">SSH method below</a> instead.</p>
+        <h3 id="advanced-install">Advanced Install (SSH)</h3>
+        <p>Use this method if you already have SSH enabled on the handheld and want to download the installer without removing the SD card. Connect from a terminal on your computer, replacing the placeholders with your handheld's username and IP address. Run the remaining commands in that SSH session, in the card's existing <code>tools</code> folder.</p>
+        <div class="code-block"><div class="code-heading"><span>Connect from your computer</span><button type="button" data-copy>Copy</button></div><pre><code>ssh YOUR_USER@YOUR_HANDHELD_IP</code></pre></div>
+        <fieldset class="card-switch" data-install-card><legend>Choose the mounted Tools folder for these commands</legend><label><input type="radio" name="tools-card" value="/roms" checked><span>SD1 <small>/roms</small></span></label><label><input type="radio" name="tools-card" value="/roms2"><span>SD2 <small>/roms2</small></span></label></fieldset>
+        <p>The commands default to SD1. The selector changes both blocks together; you still choose the <strong>app destination</strong> separately inside the manager.</p>
+        <noscript><p>For SD2, replace <code>/roms/tools</code> with <code>/roms2/tools</code> in <strong>both blocks</strong> below.</p></noscript>
+        <div class="code-block"><div class="code-heading"><span>On the handheld: download, then inspect</span><button type="button" data-copy>Copy</button></div><pre><code data-install-command>cd /roms/tools &amp;&amp; \
+curl -fL --connect-timeout 15 --max-time 120 -o install227ai.sh.download \
+  https://github.com/1Z99/project-ai-r36s/releases/download/v1.0.0/install227ai.sh &amp;&amp; \
+mv install227ai.sh.download install227ai.sh &amp;&amp; less install227ai.sh</code></pre></div>
+        <p><strong>Stop if any command fails. Do not launch an older file after a failed download.</strong> After a successful download, read the script in the viewer and press <kbd>q</kbd> to close it. If <code>less</code> is not installed, open the downloaded file in a text editor before continuing. There is no need to pipe a remote script straight into a shell.</p>
+        <div class="code-block"><div class="code-heading"><span>On the handheld: launch after successful review</span><button type="button" data-copy>Copy</button></div><pre><code data-install-launch>sh /roms/tools/install227ai.sh</code></pre></div>
+        <p>The installer opens on the <strong>handheld's screen</strong>, not in your SSH terminal. Use the D-Pad and <kbd>A</kbd> to choose <strong>Main SD / SD1</strong> or <strong>Second SD / SD2</strong>, choose <strong>INSTALL</strong>, confirm <strong>Yes</strong>, and wait for success. Only then restart the handheld and open <strong>227 &gt; 227 AI</strong>. The install card you choose on screen can be different from the card holding the downloaded file.</p>
+        <h3>Installer details</h3>
+        <p>The release asset is a bootstrap for current code, not a frozen v1.0.0 app bundle. The bootstrap downloads four matching manager modules from repository <code>main</code>: UI, core, CLI and <code>installer_deps.py</code>. If any is missing, it refreshes the whole set, checks for nonempty valid Python, then publishes with per-file renames. A complete stored set is reused. Syntax validation is not a cryptographic authenticity check. The core resolves online app source to an immutable <code>main</code> commit before staging. Review the <a href="development.html#downloads">download trust boundaries</a> for local installs.</p>
+        <h3>Automatic dependencies</h3>
+        <p>The shell validates installed Python 3.9+ before running Python and can install absent Python or <code>curl</code>. It never upgrades or replaces an existing broken/old Python. Before the graphical manager opens its SDL display, the helper checks manager SDL libraries and <code>curl</code>. Only after you explicitly confirm install/update does the core check all app dependencies, including eSpeak English data, ALSA tools and procps. If everything works, these checks make <strong>no APT/package-database queries and no system changes</strong>.</p>
+        <p>Only absent capabilities trigger automatic package setup. It requires Debian/Ubuntu-family firmware, <code>aarch64</code>, dpkg architecture <code>arm64</code>, APT, and root or noninteractive <code>sudo -n</code>. No password is requested or stored. Unsupported systems or denied administrator access produce a clear error and missing-package list. This is not support for arbitrary Linux systems or a guarantee for all firmware.</p>
+        <p>APT simulates with <code>--no-upgrade --no-remove --no-install-recommends</code>, pins the full dependency closure and verifies the plan again before installing. It rejects upgrades, removals and protected graphics/firmware packages, including Mesa/EGL/GLES/GBM/DRM/Mali. Package indexes refresh only if the initial simulation fails. Broken existing libraries are errors, not permission to replace a working graphics stack.</p>
+        <p>The bootstrap SHA-256-validates regular/bold fonts and their existing DejaVu license in the manager's <code>fonts/</code> directory. Manager and app use bundled fonts without requiring OS fonts; app copies live in its data root, with OS fonts as fallback. Desktop, help, dry-run and uninstall skip automatic dependency setup. Shared system packages use the system partition, are outside app-file rollback and the SD staging budget, and remain installed after app removal.</p>
+      </section>
+
+      <section id="choose-card" data-search-section>
+        <h2>Choose a card</h2>
+        <p>The manager detects <strong>Main SD / SD1</strong> at <code>/roms</code> and <strong>Second SD / SD2</strong> at <code>/roms2</code> independently. Both mounted, writable cards are eligible app destinations, even if EmulationStation currently uses only one for ROMs. Unmounted or read-only cards display a reason and cannot be selected.</p>
+        <p>Use D-Pad Left/Right to move between card choices and <kbd>A</kbd> to select one. Up/Down moves through the card/action rows. Choose the desired action with <kbd>A</kbd>, then move the confirmation to Yes and confirm again. <kbd>X</kbd> refreshes card discovery on the home screen and clears the previous selection.</p>
+        <p>The manager remains on its original Tools card. Bootstrap storage prefers the card containing the launcher; otherwise it tries writable, mounted <code>/roms2</code>, then <code>/roms</code>. This fallback <strong>never silently chooses where the app is installed</strong>.</p>
+        <div class="callout warning"><p><strong>Installing on the other card does not move or delete the first copy.</strong> EmulationStation has one shared <code>227</code> registration. A new install on another card repoints it there. Back up and maintain each copy deliberately; the card picker is not a migration tool.</p></div>
+        <figure class="shot" data-shot="installer"><div class="shot-placeholder"><span class="shot-code">INSTALLER / PC DEMO</span><strong>Choose your SD card</strong><p>Native PC render with sample cards. No installation is executed.</p><span class="shot-aspect">640 x 480 / 4:3</span></div><figcaption>The deployment manager requires an explicit app destination before an action can run. <a href="gallery.html#captures">Watch the installer demo and view every step.</a></figcaption></figure>
+      </section>
+
+      <section id="first-launch" data-search-section>
+        <h2>First launch</h2>
+        <p>Open <strong>227 &gt; 227 AI</strong> after refreshing EmulationStation. The opening animation is optional, and the local model must load before the engine reports <strong>READY</strong>. Startup and first-answer work can take time on this hardware; there is no documented speed guarantee.</p>
+        <ol class="steps">
+          <li>Press <kbd>A</kbd> to open the keyboard when the pointer is not highlighting an existing reply's read-aloud target.</li>
+          <li>Move between keys with the D-Pad and type with <kbd>A</kbd>. Use <kbd>Y</kbd> for a space and <kbd>B</kbd> to delete. Up from the top keyboard row selects available word suggestions.</li>
+          <li>Press <kbd>X</kbd> or activate <strong>SEND</strong>. Ask one short, concrete question to begin.</li>
+          <li>Scroll with D-Pad Up/Down. Open history with <kbd>X</kbd>, start a new chat with <kbd>Y</kbd>, or open Settings with <kbd>R2</kbd>.</li>
+        </ol>
+        <p>To dictate, select the keyboard's <strong>MIC</strong> key, speak, and activate it again to stop. Recording stops automatically at 30 seconds. Wait for local English transcription, check the resulting draft, then send it yourself. To read a reply aloud, move the pointer over the reply and press <kbd>A</kbd>; press <kbd>A</kbd> again to stop playback.</p>
+        <p>Text chat does not require a microphone. For voice setup, open <strong>R2 &gt; VOICE</strong>, select your microphone/speaker device and run <strong>TEST MICROPHONE</strong>. See <a href="reference.html#speech">Speech and microphone setup</a> for the complete flow and limits.</p>
+      </section>
+
+      <section id="manager" data-search-section>
+        <h2>The deployment manager</h2>
+        <p>Reopen <strong>Tools &gt; Install 227 AI</strong> for maintenance. Its self-locating launcher starts the stored manager directly; SSH and terminal input are not needed. Select the app card again every time.</p>
+        <p>The <code>227-ai-manager/</code> folder holds support files, not another tool to open. Its internal launcher is named <code>install.bootstrap</code>, so EmulationStation's recursive <code>.sh</code> scan does not list the folder in Tools. Keep the folder in place; the normal Tools shortcut needs it.</p>
+        <h3 id="manager-menu">Seeing the manager folder in Tools?</h3>
+        <p>You have an older bootstrap. <a href="#installation">Download and inspect the updated <code>install227ai.sh</code></a>, then run it once from the <strong>same Tools card as your existing manager</strong>. It publishes the replacement bootstrap and shortcut before removing the legacy internal <code>install.sh</code>. Close the manager and restart EmulationStation to clear the old folder entry. No app reinstall or manual folder deletion is needed.</p>
+        <div class="table-wrap"><table><caption>Manager actions and controls</caption><thead><tr><th scope="col">Action or control</th><th scope="col">What happens</th></tr></thead><tbody>
+          <tr><th scope="row">INSTALL</th><td>Stages application files, verified binaries and models, then publishes the launcher and system registration. Existing settings and conversations are preserved.</td></tr>
+          <tr><th scope="row">UPDATE / REPAIR</th><td>Compares source contents and verifies installed files. Reports an actual no-op or repairs missing/changed items, using the same preservation rules as install.</td></tr>
+          <tr><th scope="row">UNINSTALL</th><td>Deletes the selected card's app and data after confirmation. Keeps the independent manager.</td></tr>
+          <tr><th scope="row">B during work</th><td>Opens a cancellation confirmation. Partials remain for retry; finalization cannot safely stop midway.</td></tr>
+          <tr><th scope="row">A / X / B after failure</th><td>Retry or resume / inspect details / return to the menu.</td></tr>
+        </tbody></table></div>
+        <p>Progress describes the <strong>current file or task</strong>, not an invented whole-install percentage. Transferred bytes, rate, elapsed time and a file ETA appear when available. A server that does not report a length produces indeterminate progress.</p>
+        <div class="callout warning"><p><strong>Do not power off during system setup or finalization.</strong> A cancellation request waits for running APT installation to finish before taking effect, just as publication, rollback or destructive removal cannot safely stop midway. App-file rollback does not undo installed system dependencies and is not power-loss recovery. If restoration fails, the error reports retained backup locations.</p></div>
+      </section>
+
+      <section id="updates" data-search-section>
+        <h2>Updates and repair</h2>
+        <p>Exit 227 AI, back up your data, connect to the internet if required, and open the manager. Select the installed app's card, choose <strong>UPDATE / REPAIR</strong>, confirm, and wait for success. Restart EmulationStation if its registration or artwork needs refreshing.</p>
+        <p>Existing <code>config.json</code>, <code>chats.json</code> and <code>history.json</code> are preserved. The local backend returns <code>up_to_date</code> and the manager shows <strong>YOU'RE UP TO DATE</strong> only after managed source files, actual model/runtime hashes, owned ES/theme metadata, required executable permissions and config-file existence all check out. It skips app-file writes, not downloads, staging, cache or logs. ES play statistics and unrelated metadata are preserved; harmless XML rewrites do not count as updates.</p>
+        <p>Missing/invalid models or runtime, launchers, permissions and menu registration trigger repair. Differing existing payload bytes are reported as <strong>Updated/repaired files</strong>: without a recorded release baseline, the check cannot reliably distinguish corruption from a newer version. It does not invent a version baseline. A local <code>--source</code> or <code>bundle/</code> compares that local tree, not GitHub; the UI explicitly labels a local test bundle.</p>
+        <p><strong>An online check needs internet even when nothing changed.</strong> The core resolves GitHub <code>main</code> through the API, then stages app/assets/licenses/system files from that immutable commit. API rate limits, network errors or source-fetch failures report that it cannot check, never a cached up-to-date success. Cached downloads are not evidence of fresh source.</p>
+        <p><strong>App source and binary releases are different channels.</strong> Binary URLs use <code>releases/latest/download</code>, with runtime and model hashes pinned by the manager core. The documented runtime release is <a href="https://github.com/1Z99/project-ai-r36s/releases/tag/v1.0.0">v1.0.0</a>; that tag does not freeze current app source. The bootstrap and manager report version 1.2.0.</p>
+        <p><strong>Update / Repair does not update the manager.</strong> A complete set of four stored modules is reused. Manager updates remain a separate manual maintenance task involving the bootstrap and matching <a href="https://github.com/1Z99/project-ai-r36s/tree/main/installer">UI, core, CLI and dependency-helper modules</a>. A missing module refreshes the whole set with the new bootstrap, but this is not a one-button manager self-update. Consult release instructions rather than deleting a module to force an improvised update.</p>
+        <p>The <a href="#manager-menu">Tools-menu cleanup</a> only needs the updated public bootstrap run once. It updates the retained launcher and removes the duplicate internal menu entry; a complete set of cached Python manager modules is still reused.</p>
+        <div class="callout warning"><p><strong>Sharing 227 with TV or other apps?</strong> Some AI manager versions replace the whole game list or remove the shared menu on uninstall. Back up the menu and verify your manager backend before AI maintenance; downloading a new bootstrap alone does not replace a complete cached backend. The website update does not change installer behavior. If TV's entry is lost, close TV and use <a href="../227-tv/guide.html#update-remove">Repair in the TV manager</a>.</p></div>
+      </section>
+
+      <section id="uninstall" data-search-section>
+        <h2>Uninstall</h2>
+        <div class="callout warning"><p><strong>Uninstall permanently removes conversations.</strong> It deletes app code, models, runtime, settings, chats, history, artwork and cache on the selected card. Make your <a href="#backups">backup</a> first.</p></div>
+        <p>Exit the app. Open <strong>Tools &gt; Install 227 AI</strong>, explicitly choose the card to remove, select <strong>UNINSTALL</strong>, and confirm. Wait until removal finishes before rebooting or removing a card.</p>
+        <p>The manager directory and <strong>Install 227 AI</strong> Tools entry remain so you can reinstall. Only a <code>227</code> system registration pointing into the selected card is removed; unrelated EmulationStation systems and a registration pointing at the other card are preserved. The installer does not restore a legacy whole-config backup. Restart EmulationStation to refresh its system list.</p>
+        <p>Shared OS dependencies are kept. Uninstall does not run automatic dependency setup or remove system packages.</p>
+      </section>
+
+      <section id="backups" data-search-section>
+        <h2>Back up your conversations</h2>
+        <p>Close 227 AI before copying files, so you do not race a save. Under the installed card's <code>tools/project_ai/</code>, copy <code>config.json</code>, <code>chats.json</code> and <code>history.json</code> to storage outside the managed app and cache directories. Files appear as they are needed, so a fresh install may not have all three.</p>
+        <p><code>chats.json</code> holds saved conversations; <code>history.json</code> holds the recent session; <code>config.json</code> holds preferences, including your custom system prompt once saved. Keeping all three is safer than treating recent history as a complete archive. For a full snapshot, copy the whole data directory, allowing for the much larger models and runtime.</p>
+        <p>To restore, install the app on the intended card, keep it closed, and copy the saved JSON files back into that card's data directory. Preserve an untouched copy of the backup. There is no built-in cloud sync, backup scheduler, or import wizard. These are <a href="reference.html#privacy">unencrypted local files</a>; protect the backup accordingly.</p>
+      </section>
+
+      <section id="cli" data-search-section>
+        <h2>Headless CLI</h2>
+        <p>CLI mode is explicit and uses the same backend as the graphical manager. Every modifying action requires <code>--cli</code>, an explicit <code>--roms</code> destination, an action and <code>--yes</code>. Run these from the directory containing the bootstrap; substitute <code>/roms2</code> only when that is your intended mounted app card.</p>
+        <div class="code-block"><div class="code-heading"><span>Help and install</span><button type="button" data-copy>Copy</button></div><pre><code>sh install227ai.sh --help
+sh install227ai.sh --cli --roms /roms --action install --yes</code></pre></div>
+        <div class="code-block"><div class="code-heading"><span>Preserving update</span><button type="button" data-copy>Copy</button></div><pre><code>sh install227ai.sh --cli --roms /roms --action update --yes</code></pre></div>
+        <p>The following command is destructive, including settings and conversations:</p>
+        <div class="code-block"><div class="code-heading"><span>Remove the selected card's app</span><button type="button" data-copy>Copy</button></div><pre><code>sh install227ai.sh --cli --roms /roms --action uninstall --yes</code></pre></div>
+        <h3>What dry-run actually checks</h3>
+        <div class="code-block"><div class="code-heading"><span>Read-only target validation</span><button type="button" data-copy>Copy</button></div><pre><code>sh install227ai.sh --cli --roms /roms --action install --dry-run</code></pre></div>
+        <p>Dry-run discovers cards and validates the target without network access or writes: no manager download, log, lock, cache or bytecode creation. It needs an existing <code>installer_core.py</code> beside the bootstrap or in <code>installer/</code>. A fresh standalone bootstrap therefore refuses dry-run rather than downloading its dependencies. It does <strong>not</strong> test transfers or calculate staging-space requirements. <code>--help</code> also avoids SDL, network and writes.</p>
+        <p>Do not pass CLI action flags to graphical mode. For isolated paths and source builds, see <a href="development.html#local-build">Local builds</a>.</p>
+      </section>
+
+      <section id="troubleshooting" data-search-section>
+        <h2>Troubleshooting</h2>
+        <details><summary>There is a second installer inside a manager folder</summary><p>That is the old internal launcher, not a separate installer. Follow the <a href="#manager-menu">Tools-menu cleanup instructions</a> to migrate it safely. Use <strong>Tools &gt; Install 227 AI</strong> afterward; do not delete the manager's support folder.</p></details>
+        <details><summary>The manager closes before a window appears</summary><p>Inspect <code>&lt;Tools card&gt;/tools/227-ai-manager/bootstrap.log</code> for Python, SDL or bundled-font validation errors. The bootstrap reports missing packages or unsupported/no-admin setup; an existing broken/old Python needs manual repair, not automatic upgrade. Bootstrap failures try an optional <code>dialog</code> message box, but if SDL cannot start and there is no usable console, a persistent graphical error is unavailable. Before manager storage exists, errors may only reach stderr or an available dialog. Fix the dependency or network error and relaunch.</p></details>
+        <details><summary>My card is unavailable</summary><p>Check that it is actually mounted at <code>/roms</code> or <code>/roms2</code>, writable, and not redirected by a symlink. Read the displayed reason. Do not create a plain directory to imitate an absent card or force a read-only card writable without investigating. Refresh discovery with <kbd>X</kbd>.</p></details>
+        <details><summary>A download failed or seems stuck</summary><p>Check Wi-Fi and the error details with <kbd>X</kbd>; press <kbd>A</kbd> to retry/resume. Transfers have connection, low-speed and overall timeouts. Models try the release mirror before Hugging Face. Retained partials can be reused, but a source that refuses range requests may restart. Manager events are in <code>227-ai-manager/installer.log</code>; CLI events are in <code>installer-cli.log</code>. Do not bypass a checksum mismatch.</p></details>
+        <details><summary>The update check cannot verify GitHub main</summary><p>Check internet access and the error details, including GitHub API rate limits, then retry. A source/API failure is not a successful no-op, and cache cannot prove the source is current. Local-bundle checks only compare that bundle and are labeled as local.</p></details>
+        <details><summary>The 227 system is missing</summary><p>Restart EmulationStation or reboot after a completed install. If it still does not appear, select the correct card and run Update / Repair. The shared <code>/etc/emulationstation/es_systems.cfg</code> should contain a <code>&lt;name&gt;227&lt;/name&gt;</code> entry pointing at that card's <code>227ai/</code> directory.</p></details>
+        <details><summary>The engine does not become ready</summary><p>Allow time for model loading. If it reports an error, use the installed LFM model and the default 768-token context, check free memory, and repair missing runtime/model files. Engine diagnostics are in <code>/tmp/project_ai_server.log</code>. A model profile's presence is not proof it fits available memory.</p></details>
+        <details><summary>Dictation or read-aloud is unavailable</summary><p>Use a USB microphone, check ALSA tools, and run <strong>R2 &gt; VOICE &gt; TEST MICROPHONE</strong>. Read-aloud needs the system <code>libespeak-ng.so.1</code>. See <a href="reference.html#speech">speech dependencies and diagnostics</a>. There is no separate MIC TEST application to launch.</p></details>
+        <p>Still blocked? File an <a href="https://github.com/1Z99/project-ai-r36s/issues">issue</a> with firmware, selected card, action, exact error and relevant log excerpts. Review logs for private text before sharing them.</p>
+      </section>
+      <nav class="doc-pagination" aria-label="Documentation pages"><a href="index.html">Back to 227 AI overview</a><a href="reference.html">Next: Field manual</a></nav>
+    </article>
+  </main>
+  <footer class="site-footer"><div><a class="footer-brand" href="../../index.html">1Z99</a><p>R36S apps and experiments.</p></div><nav aria-label="227 AI links"><a href="guide.html">Install 227 AI</a><a href="reference.html#licenses">Licenses</a><a href="https://github.com/1Z99/project-ai-r36s">227 AI source</a></nav><p class="footer-note">227 AI: a little handheld. A local assistant. No cloud account.</p></footer>
+</body>
+</html>

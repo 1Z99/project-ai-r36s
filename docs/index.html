@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080d0b">
+  <title>1Z99 | Native R36S Apps &amp; Experiments</title>
+  <meta name="description" content="I'm 1Z99. I make apps and try out ideas on the R36S. Projects, screenshots and documentation, including the offline assistant 227 AI.">
+  <meta property="og:title" content="1Z99 - Native R36S apps and experiments">
+  <meta property="og:description" content="Native R36S apps by 1Z99, including 227 AI, screenshots and build notes.">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="media/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="site.css">
+  <script src="site.js" defer></script>
+</head>
+<body class="workshop-page">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <a class="brand workshop-brand" href="index.html" aria-label="1Z99 home"><span class="brand-number">1Z99</span><span class="brand-suffix">R36S<span>APPS &amp; EXPERIMENTS</span></span></a>
+    <nav class="main-nav" id="main-nav" aria-label="Main navigation"><a href="#projects">Projects</a><a href="#about">About</a><a href="#device">My R36S</a></nav>
+    <div class="header-actions"><button type="button" class="search-trigger" data-search-open aria-label="Search site">Search <kbd>/</kbd></button><button type="button" class="menu-toggle" data-menu-toggle aria-controls="site-menu" aria-expanded="false">Menu</button></div>
+  </header>
+  <main id="main" class="workshop-home page-width">
+    <section class="workshop-intro" id="about" data-search-section>
+      <div class="workshop-intro-copy">
+        <p class="eyebrow">1Z99 / R36S PROJECTS</p>
+        <h1>I make things<br>for the <span>R36S.</span></h1>
+        <p class="workshop-description">I'm just a guy trying to do cool stuff with the R36S. I got curious about what it could do besides games, so I started making apps for it. This is where I share them.</p>
+      </div>
+      <figure class="hero-device shot" id="demo" data-walkthrough>
+        <div class="shot-placeholder device-placeholder">
+          <span class="shot-code">227 AI DEMO</span>
+          <svg class="handheld-illustration" viewBox="0 0 360 470" role="group" aria-label="R36S illustration with an automated 227 AI desktop walkthrough playing inside the screen; not a live device">
+            <rect class="device-outline" x="39" y="12" width="282" height="438" rx="28"/>
+            <path class="device-detail" d="M63 28h234M63 434h234"/>
+            <rect class="device-bezel" x="58" y="42" width="244" height="193" rx="10"/>
+            <rect class="device-screen" x="72" y="56" width="216" height="162"/>
+            <image class="device-demo-poster" href="media/previews/app/chat.png" x="72" y="56" width="216" height="162" preserveAspectRatio="xMidYMid meet"/>
+            <foreignObject class="device-demo-viewport" x="72" y="56" width="216" height="162">
+              <div xmlns="http://www.w3.org/1999/xhtml" class="device-demo-frame">
+                <video id="r36s-walkthrough" class="device-demo" width="640" height="480" muted playsinline loop controls preload="metadata" poster="media/previews/app/chat.png" aria-label="Automated 227 AI PC walkthrough" aria-describedby="walkthrough-disclosure">
+                  <source src="media/previews/227-ai-walkthrough.mp4" type="video/mp4">
+                  <track kind="captions" src="media/previews/227-ai-walkthrough.vtt" srclang="en" label="English walkthrough captions">
+                  Your browser can <a href="media/previews/227-ai-walkthrough.mp4">open the full walkthrough video</a> instead.
+                </video>
+              </div>
+            </foreignObject>
+            <path class="device-button" d="M91 265h23v22h23v23h-23v23H91v-23H68v-23h23z"/>
+            <circle class="device-button" cx="251" cy="280" r="13"/><circle class="device-button" cx="278" cy="306" r="13"/>
+            <circle class="device-button" cx="225" cy="306" r="13"/><circle class="device-button" cx="251" cy="332" r="13"/>
+            <text class="button-letter" x="251" y="284">X</text><text class="button-letter" x="278" y="310">A</text><text class="button-letter" x="225" y="310">Y</text><text class="button-letter" x="251" y="336">B</text>
+            <circle class="device-stick" cx="115" cy="375" r="26"/><circle class="device-detail" cx="115" cy="375" r="18"/>
+            <circle class="device-stick" cx="246" cy="375" r="26"/><circle class="device-detail" cx="246" cy="375" r="18"/>
+            <rect class="device-button" x="158" y="315" width="17" height="6" rx="3"/><rect class="device-button" x="187" y="315" width="17" height="6" rx="3"/>
+            <path class="device-detail" d="M169 365v27m10-27v27m10-27v27m10-27v27"/>
+            <text class="device-signature" x="180" y="425">R36S / 1Z99</text>
+          </svg>
+          <span class="illustration-label">PC WALKTHROUGH</span>
+        </div>
+        <div class="demo-controls" data-demo-controls hidden>
+          <div class="demo-now"><span data-demo-status aria-live="polite">Starting 227 AI</span><span data-demo-time>0:00 / 1:18</span></div>
+          <div class="demo-transport" role="group" aria-label="Walkthrough playback">
+            <button type="button" data-demo-toggle aria-controls="r36s-walkthrough">Play</button>
+            <button type="button" data-demo-restart aria-controls="r36s-walkthrough">Replay</button>
+            <button type="button" data-demo-audio aria-pressed="false">Sound off</button>
+            <button type="button" data-demo-expand aria-haspopup="dialog">Expand</button>
+          </div>
+          <input id="walkthrough-position" class="demo-position" type="range" min="0" max="78" step="0.1" value="0" aria-label="Walkthrough position" aria-controls="r36s-walkthrough">
+          <details class="demo-chapters"><summary>Jump to a scene</summary><div class="demo-scene-list" data-demo-chapters role="group" aria-label="Walkthrough scenes"></div></details>
+          <button type="button" class="demo-caption-toggle" data-demo-captions aria-pressed="false">Captions off</button>
+        </div>
+        <figcaption id="walkthrough-disclosure">PC demo. Scripted replies and simulated microphone input. Sound starts muted. <a href="media/previews/227-ai-walkthrough.mp4">Open video.</a></figcaption>
+      </figure>
+    </section>
+    <section class="workshop-section" id="projects" data-search-section>
+      <div class="section-label"><span>01 / PROJECTS</span><span>NATIVE APPS &amp; EXPERIMENTS</span></div>
+      <div class="workshop-section-heading"><h2>Projects</h2></div>
+      <ol class="project-cards">
+        <!-- Add future projects as sibling list items. -->
+        <li>
+          <article class="project-feature" id="project-ai" data-project="227-ai" data-captures="screenshots.json">
+            <div class="project-feature-copy">
+              <div class="project-kicker"><span>001 / 227 AI</span><span class="tag">AVAILABLE</span></div>
+              <h3>227 AI</h3>
+              <p class="project-subtitle">An offline assistant.<br>On a retro handheld.</p>
+              <p>A local language model, an on-screen keyboard, USB microphone dictation and spoken replies.</p>
+              <ul class="project-tags" aria-label="Project technologies"><li>Python + SDL2</li><li>Local inference</li><li>Controller-first</li></ul>
+              <nav class="project-links" aria-label="227 AI project links"><a class="text-link" href="projects/227-ai/index.html">Explore 227 AI &#8599;</a><a class="text-link" href="https://github.com/1Z99/project-ai-r36s">Source code &#8599;</a><a class="text-link" href="projects/227-ai/development.html">Build notes &#8599;</a><a class="text-link" href="projects/227-ai/gallery.html">Screenshots &#8599;</a></nav>
+            </div>
+            <figure class="shot project-shot" data-shot="chat"><div class="shot-placeholder"><strong>PC demo frame</strong></div><figcaption>Conversation</figcaption></figure>
+          </article>
+          </li>
+          <li>
+            <article class="project-feature" id="project-tv" data-project="227-tv" data-captures="projects/227-tv/screenshots.json">
+              <div class="project-feature-copy">
+                <div class="project-kicker"><span>002 / 227 TV</span><span class="tag">AVAILABLE</span></div>
+                <h3>227 TV</h3>
+                <p class="project-subtitle">Live TV on a globe.<br>From a handheld.</p>
+                <p>Spin the atlas, pick a country and watch its live stations, with a software-rendered libmpv and the shared 227 menu beside 227 AI. Install with one file from GitHub Releases.</p>
+                <ul class="project-tags" aria-label="Project technologies"><li>Python + SDL2</li><li>Software libmpv</li><li>Controller-first</li></ul>
+                <nav class="project-links" aria-label="227 TV project links"><a class="text-link" href="projects/227-tv/index.html">Explore 227 TV &#8599;</a><a class="text-link" href="projects/227-tv/guide.html">Installation guide &#8599;</a><a class="text-link" href="https://github.com/1Z99/r36s-tv/releases">Download the installer &#8599;</a><a class="text-link" href="https://github.com/1Z99/r36s-tv">Source code &#8599;</a><a class="text-link" href="projects/227-tv/gallery.html">Screenshots &#8599;</a></nav>
+              </div>
+              <figure class="shot project-shot" data-shot="watch"><div class="shot-placeholder"><span class="shot-code">227 TV / PC PLAYBACK CAPTURE</span><strong>The fullscreen watch interface</strong><p>France 24 French, decoded live in the native app on a PC.</p></div><figcaption>France 24 French playing in 227 TV on a PC, not a handheld capture. <a href="projects/227-tv/gallery.html#capture-plan">Provenance and credits.</a></figcaption></figure>
+            </article>
+          </li>
+        </ol>
+      </section>
+
+    <section class="workshop-section" id="device" data-search-section>
+      <div class="section-label"><span>02 / MY R36S</span></div>
+      <div class="workshop-bench">
+        <div class="workshop-device-copy">
+          <h2>My R36S.</h2>
+          <p>The handheld I build and test these projects on. A Panel 4 screen, dArkOSRE, and a little room to experiment.</p>
+          <a class="text-link" href="projects/227-ai/development.html#tested-build">227 AI tested environment &#8599;</a>
+        </div>
+        <dl class="workshop-device-specs">
+          <div><dt>Display</dt><dd>Panel 4<span>640 &#215; 480 pixels</span></dd></div>
+          <div><dt>Firmware</dt><dd>dArkOSRE<span>Build <code>03082026</code></span></dd></div>
+          <div><dt>Platform</dt><dd>aarch64<span>Linux 4.4.189</span></dd></div>
+          <div><dt>Python</dt><dd>3.13.5<span>Device runtime</span></dd></div>
+        </dl>
+      </div>
+      <p class="workbench-provenance">Panel 4 is my device's screen variant, not a requirement or a compatibility promise for every R36S.</p>
+    </section>
+  </main>
+   <footer class="site-footer"><div><a class="footer-brand" href="index.html">1Z99</a><p>R36S apps and experiments.</p></div><nav aria-label="Site links"><a href="https://github.com/1Z99">GitHub</a><a href="LICENSE.txt">Site license</a></nav></footer>
+</body>
+</html>

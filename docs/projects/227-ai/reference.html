@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080d0b">
+  <title>Field Manual | 227 AI | 1Z99</title>
+  <meta name="description" content="227 AI controls, exact settings defaults, local models and checksums, English speech setup, storage paths, privacy boundaries and third-party licenses.">
+  <link rel="icon" href="../../media/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../site.css">
+  <script src="../../site.js" defer></script>
+</head>
+<body data-project="227-ai" data-captures="screenshots.json">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <a class="brand workshop-brand" href="../../index.html" aria-label="1Z99 home"><span class="brand-number">1Z99</span><span class="brand-suffix">R36S<span>APPS &amp; EXPERIMENTS</span></span></a>
+    <nav class="main-nav" id="main-nav" aria-label="Main navigation"><a href="../../index.html#projects">Projects</a><a href="../../index.html#about">About</a><a href="../../index.html#device">My R36S</a></nav>
+    <div class="header-actions"><button type="button" class="search-trigger" data-search-open aria-label="Search site">Search <kbd>/</kbd></button><button type="button" class="menu-toggle" data-menu-toggle aria-controls="site-menu" aria-expanded="false">Menu</button></div>
+  </header>
+  <div class="project-context page-width">
+    <nav class="breadcrumb" aria-label="Breadcrumb"><ol><li><a href="../../index.html">1Z99</a></li><li><a href="../../index.html#projects">Projects</a></li><li><a href="index.html">227 AI</a></li><li><span aria-current="page">Field manual</span></li></ol></nav>
+    <nav class="project-nav" aria-label="227 AI navigation"><span class="project-nav-label">227 AI</span><a href="index.html">Overview</a><a href="guide.html">Install</a><a href="reference.html" aria-current="page">Manual</a><a href="development.html">Build notes</a><a href="gallery.html">Screenshots</a></nav>
+  </div>
+  <main id="main" class="docs-layout">
+    <aside class="docs-sidebar">
+      <span class="eyebrow">Field Manual</span>
+      <nav aria-label="On this page"><a href="#controls">Controls</a><a href="#settings">Settings</a><a href="#models">Models and checksums</a><a href="#speech">Speech</a><a href="#storage">Storage</a><a href="#privacy">Privacy</a><a href="#licenses">Licenses and credits</a><a href="#limits">Limits</a><a href="#known-pitfalls">Known pitfalls</a></nav>
+      <a class="sidebar-source" href="https://github.com/1Z99/project-ai-r36s">View source &#8599;</a>
+    </aside>
+    <article class="docs-article">
+      <div class="doc-heading">
+        <p class="eyebrow">227 AI / Field Manual</p>
+        <h1>Know your pocket assistant.</h1>
+        <p class="lede">The controls, defaults and boundaries of 227 AI. A local model, a controller-first interface, and files you can inspect on your own card.</p>
+        <div class="doc-meta"><span>640 x 480 interface</span><span>Local inference and speech</span><span>No cloud account</span></div>
+      </div>
+
+      <section id="controls" data-search-section>
+        <h2>Controls</h2>
+        <p>Controls depend on the active screen. In particular, <kbd>B</kbd> is not always Exit and <kbd>Y</kbd> is not always New Chat. Read the current footer before acting in history or an editor.</p>
+        <div class="table-wrap"><table><caption>Main conversation</caption><thead><tr><th scope="col">Control</th><th scope="col">Action</th></tr></thead><tbody>
+          <tr><th scope="row">D-Pad Up / Down</th><td>Scroll the conversation.</td></tr>
+          <tr><th scope="row">Left stick</th><td>Move the pointer, including over a reply's read-aloud target.</td></tr>
+          <tr><th scope="row">Right stick vertically</th><td>Scroll when no keyboard or overlay is open.</td></tr>
+          <tr><th scope="row">A</th><td>Stop active read-aloud; otherwise read the reply under the pointer, or open the keyboard when ready.</td></tr>
+          <tr><th scope="row">X / Y</th><td>Open chat history / start a new chat.</td></tr>
+          <tr><th scope="row">B</th><td>Request generation cancellation while a reply is active; otherwise exit from the main screen.</td></tr>
+          <tr><th scope="row">R2</th><td>Open or close Settings.</td></tr>
+        </tbody></table></div>
+        <div class="table-wrap"><table><caption>Message keyboard</caption><thead><tr><th scope="col">Control</th><th scope="col">Action</th></tr></thead><tbody>
+          <tr><th scope="row">D-Pad / A</th><td>Move between keys / activate the selected key. The left stick can also position the pointer.</td></tr>
+          <tr><th scope="row">X / Y</th><td>Send the draft / insert a space.</td></tr>
+          <tr><th scope="row">B</th><td>Delete one character; close the keyboard if the draft is already empty.</td></tr>
+          <tr><th scope="row">Up from the top row</th><td>Focus available word suggestions. Move Left/Right and accept with A; Down returns to keys.</td></tr>
+          <tr><th scope="row">MIC</th><td>Start recording, then activate again to stop and transcribe into the draft.</td></tr>
+          <tr><th scope="row">SPACE / DEL / SEND / CLOSE</th><td>Explicit action keys; CLOSE hides the keyboard without sending the draft.</td></tr>
+        </tbody></table></div>
+        <p>Suggestions are prefix matches from the local word list, not predictions from a remote service. Dictation inserts text into the draft; it does not automatically submit a question.</p>
+        <div class="table-wrap"><table><caption>Chat history</caption><thead><tr><th scope="col">Control</th><th scope="col">Action</th></tr></thead><tbody>
+          <tr><th scope="row">D-Pad Up / Down</th><td>Select a saved conversation.</td></tr>
+          <tr><th scope="row">A</th><td>Open the selected chat.</td></tr>
+          <tr><th scope="row">X / B</th><td>Close history.</td></tr>
+          <tr><th scope="row">Y</th><td>Delete the selected saved chat. Treat this as a destructive action, not a new-chat shortcut.</td></tr>
+        </tbody></table></div>
+        <p>Opening an older chat does not give the model unlimited memory of it. Stored messages and the much smaller inference context are separate things.</p>
+      </section>
+
+      <section id="settings" data-search-section>
+        <h2>Settings</h2>
+        <p>Press <kbd>R2</kbd>. Up/Down selects a page in the left navigation; Right or <kbd>A</kbd> focuses its values. Up/Down then selects a row, Left/Right changes supported values, and <kbd>A</kbd> selects or adjusts. <kbd>B</kbd> closes Settings outside the prompt editor. Most accepted changes save immediately to <code>config.json</code>.</p>
+        <div class="table-wrap"><table><caption>Generation, voice and appearance defaults</caption><thead><tr><th scope="col">Setting</th><th scope="col">Default</th><th scope="col">Choices in the interface</th></tr></thead><tbody>
+          <tr><th scope="row">Model</th><td>LFM 2.5 / <code>fast</code></td><td>Profiles whose model files are present.</td></tr>
+          <tr><th scope="row">Context window</th><td>768 tokens</td><td>512, 768, 1024.</td></tr>
+          <tr><th scope="row">Reply limit</th><td>160 tokens</td><td>64, 96, 128, 160, 192, 256.</td></tr>
+          <tr><th scope="row">Temperature</th><td>0.25</td><td>0, 0.1, 0.25, 0.5, 0.7, 1.</td></tr>
+          <tr><th scope="row">Word highlight</th><td>On</td><td>On / Off for read-aloud highlighting.</td></tr>
+          <tr><th scope="row">Reading speed</th><td>1.0x</td><td>0.75x, 1.0x, 1.25x, 1.5x.</td></tr>
+          <tr><th scope="row">Mic / speaker</th><td>Auto</td><td>Auto and detected capture-device identities.</td></tr>
+          <tr><th scope="row">Background opacity</th><td>20%</td><td>0%, 10%, 20%, 30%, 40%.</td></tr>
+          <tr><th scope="row">Opening animation</th><td>On</td><td>On / Off; takes effect next launch.</td></tr>
+        </tbody></table></div>
+        <p>These are the UI's choices, not a claim that arbitrary JSON values are accepted unchanged. The loader clamps context to 512-1024, reply limits to 48-256, temperature to 0-1 and speech speed to 0.75-1.5. Prefer the interface for normal changes. Generation also uses fixed <code>top_k=40</code>, <code>top_p=0.9</code> and <code>repeat_penalty=1.08</code>.</p>
+        <h3>The six pages</h3>
+        <p><strong>MODELS</strong> selects among present files. <strong>SYSTEM PROMPT</strong> edits the instructions used for the next answer. <strong>GENERATION</strong> holds context, reply and temperature controls. <strong>VOICE</strong> holds highlighting, rate, device selection and the microphone test. <strong>APPEARANCE</strong> controls the static background and intro. <strong>SYSTEM INFO</strong> shows the target profile, inference setup and data path; its target-profile labels are not a hardware certification scan.</p>
+        <p>Changing the model or context reloads the engine in place while retaining the chat and draft. A change requiring an engine reload is rejected while generation, dictation or another engine transition is active. A failed save or missing background reports a note rather than silently claiming success.</p>
+        <h3>System prompt editor</h3>
+        <p>Choose EDIT, type using the on-screen keyboard, or use its own MIC key to dictate. <kbd>X</kbd> applies, <kbd>B</kbd> deletes, <kbd>Y</kbd> selects all, and <kbd>L1</kbd> inserts a newline. The action row provides MIC, SPACE, DEL, ALL, APPLY and CANCEL. APPLY requires nonempty text; CANCEL discards the draft. RESET on the prompt page restores the built-in instructions.</p>
+        <p>The default prompt asks 227 to be concise, useful and honest, acknowledge uncertainty, check constraints and arithmetic, and keep normal replies under 100 words unless more detail is requested. This is guidance to a small language model, not a correctness guarantee.</p>
+      </section>
+
+      <section id="models" data-search-section>
+        <h2>Models and checksums</h2>
+        <p>The installer fetches two model files. Approximate sizes below use MiB; exact bytes and SHA-256 values come from <a href="https://github.com/1Z99/project-ai-r36s/blob/main/installer/installer_core.py">the installer core</a>.</p>
+        <div class="table-wrap"><table><caption>Installed model payloads</caption><thead><tr><th scope="col">Model</th><th scope="col">File relative to the data directory</th><th scope="col">Size</th></tr></thead><tbody>
+          <tr><th scope="row"><a href="https://huggingface.co/LiquidAI/LFM2.5-350M-GGUF">Liquid AI LFM 2.5 350M</a></th><td><code>models/LFM2.5-350M-QAD-Q4_0.gguf</code></td><td>219,312,832 bytes, about 209 MiB</td></tr>
+          <tr><th scope="row"><a href="https://huggingface.co/ggerganov/whisper.cpp">Whisper tiny.en, q5_1</a></th><td><code>models/whisper/ggml-tiny.en-q5_1.bin</code></td><td>32,166,155 bytes, about 31 MiB</td></tr>
+        </tbody></table></div>
+        <p>Remote model downloads try this project's release mirror first, then Hugging Face. A supplied local model is tried before remote sources in a local bundle. Every accepted model must match the pinned hash.</p>
+        <div class="code-block"><div class="code-heading"><span>Pinned SHA-256 values</span><button type="button" data-copy>Copy</button></div><pre><code># project-ai-r36s-runtime-arm64.tar.gz
+4ad9f9a9aa29d05370982e3b7bdf53b4b9879893a41a4ffa9e7fd72b39a8c1b2
+# LFM2.5-350M-QAD-Q4_0.gguf
+3d10b6ab8fc91a919534b9558e266255aca0bbc7f6d015963599aa9e74e05b1d
+# ggml-tiny.en-q5_1.bin
+c77c5766f1cef09b6b7d47f21b546cbddd4157886b3b5d6d4f709e91e66c7c2b</code></pre></div>
+        <p>The runtime archive's adjacent <code>.sha256</code> sidecar must agree with the core's pin, and the archive itself is hashed. Installed runtime reuse checks actual files against its manifest and requires executable engine binaries. These pins cover those binaries and models, not every remote source file. The local online core resolves GitHub <code>main</code> via the API and stages source from an immutable commit; that snapshot is not a signed release or a version baseline.</p>
+        <h3>Optional profiles are not installed models</h3>
+        <p>The app recognizes <code>Qwen3-0.6B-Q4_K_M.gguf</code> as <code>smart</code> and <code>Falcon-H1-0.5B-Instruct-Q4_K_M.gguf</code> as <code>falcon</code> if those exact files exist in <code>models/</code>. <strong>The installer does not download them.</strong> File presence makes a profile visible; it does not establish runtime compatibility, memory fit, speed or answer quality. No comparative benchmark is supplied here. Check each optional model's own license before obtaining or redistributing it.</p>
+      </section>
+
+      <section id="speech" data-search-section>
+        <h2>Speech and microphone setup</h2>
+        <p>Speech recognition and synthesis are offline but separate. Whisper turns a short recording into draft text; espeak-ng reads a selected reply. This is not an always-listening assistant or a continuous voice conversation.</p>
+        <ol class="steps">
+          <li>Connect a usable USB microphone. Do not depend on an internal R36S microphone path.</li>
+          <li>Open <strong>R2 &gt; VOICE &gt; MIC / SPEAKER</strong> and choose Auto or a detected device. Saved device identities survive ALSA card renumbering when the same identity is available.</li>
+          <li>Select <strong>TEST MICROPHONE</strong>. It records about four seconds, analyzes the signal and attempts playback through the selected device. A capture-only USB device may not provide a playback endpoint.</li>
+          <li>In the message keyboard or prompt editor, activate MIC, speak clearly, activate it again, and wait for transcription. Review the text before sending or applying.</li>
+        </ol>
+        <p>Capture uses mono, 16-bit PCM at 16 kHz. The shipped speech model is <strong>English-only tiny.en</strong>, and the transcription command explicitly selects English. Recording is capped at 30 seconds; transcription can take additional time. The microphone test's signal verdict is a troubleshooting aid, not a transcription accuracy score.</p>
+        <p>Read-aloud uses the operating system's <code>libespeak-ng.so.1</code>, with an English voice and a baseline of <strong>175 words per minute at 1.0x</strong>. Word timings drive optional highlighting. Only the first 600 characters of a selected reply are passed to synthesis. Speech output is synthetic; it does not provide a natural-voice quality guarantee.</p>
+        <p>On a confirmed install/update, the installer checks <code>libespeak-ng.so.1</code> and usable English voice data, plus <code>arecord</code>, <code>aplay</code>, <code>amixer</code> and <code>pkill</code>. Missing capabilities map to <code>libespeak-ng1</code>, <code>espeak-ng-data</code>, <code>alsa-utils</code> and <code>procps</code>. The restricted helper can install these only on supported Debian/Ubuntu-family aarch64 firmware with dpkg <code>arm64</code>, APT and root or <code>sudo -n</code>; no password is requested. Unsupported/no-admin cases report an error and missing-package list. A functioning audio device route is required regardless of installed packages.</p>
+        <p>Working capabilities cause no package queries or system changes. Missing-capability setup audits and version-pins the complete dependency closure with <code>--no-upgrade --no-remove --no-install-recommends</code>, rejects upgrades/removals and protected Mesa/EGL/GLES/GBM/DRM/Mali graphics/firmware packages, and refreshes indexes only if initial simulation fails. Broken existing libraries are not automatically replaced. Desktop, help, dry-run and uninstall skip automatic setup. Packages consume system-partition space outside the SD budget and app rollback, and stay installed after uninstall. Cancellation waits for running APT to finish; do not power off during setup.</p>
+        <p>Useful diagnostics include <code>/tmp/project_227_mic.log</code> and the microphone-test status. There is <strong>no separate MIC TEST launcher</strong>; Update / Repair removes the old standalone test entry.</p>
+      </section>
+
+      <section id="storage" data-search-section>
+        <h2>Storage map</h2>
+        <p>In this table, <code>$R</code> means the explicitly selected app card and <code>$T</code> means the independent card holding the manager. Each can be <code>/roms</code> or <code>/roms2</code>. These are explanatory symbols, not environment variables you must set.</p>
+        <div class="table-wrap"><table><caption>Files and ownership</caption><thead><tr><th scope="col">Path</th><th scope="col">Purpose</th></tr></thead><tbody>
+          <tr><th scope="row"><code>$R/tools/project_ai_r36s.py</code><br><code>$R/tools/project_ai_settings.py</code></th><td>App and settings module.</td></tr>
+          <tr><th scope="row"><code>$R/tools/project_ai/</code></th><td>Data root: models, runtime, whisper engine, artwork, word list, bundled regular/bold DejaVu Sans Mono fonts, license notices and JSON data. The app prefers bundled fonts, with OS fonts as fallback.</td></tr>
+          <tr><th scope="row"><code>config.json</code></th><td>Preferences and saved system prompt under the data root; existing file preserved by install/update.</td></tr>
+          <tr><th scope="row"><code>chats.json</code> / <code>history.json</code></th><td>Saved conversations / recent session under the data root.</td></tr>
+          <tr><th scope="row"><code>$R/227ai/</code></th><td><code>227 AI.sh</code>, <code>gamelist.xml</code> and cover art for EmulationStation.</td></tr>
+          <tr><th scope="row"><code>$R/.227-ai-cache/</code></th><td>Downloads, source-specific partials, transfer diagnostics and temporary staging. Cache occupies space until removed; uninstall deletes it.</td></tr>
+          <tr><th scope="row"><code>$T/tools/227-ai-manager/</code></th><td>Support folder, not a Tools-menu entry. Contains <code>install.bootstrap</code>, four manager modules (UI, core, CLI, dependency helper), optional bundle and logs. <code>fonts/</code> holds SHA-256-validated regular/bold fonts and their DejaVu license for manager fallback. Keep it in place and use the shortcut below.</td></tr>
+          <tr><th scope="row"><code>$T/tools/Install 227 AI.sh</code></th><td>Self-locating manager launcher, retained after app uninstall.</td></tr>
+          <tr><th scope="row"><code>/etc/emulationstation/es_systems.cfg</code></th><td>Shared configuration; only the matching 227 system block is added, repointed or removed.</td></tr>
+        </tbody></table></div>
+        <p>The app resolves its data directory relative to its own Python file, so it can run from either app card. <a href="guide.html#backups">Back up all three JSON files</a> before removal. A retained manager is not a backup of deleted chats.</p>
+        <p>Fresh app staging budgets about 650 MiB, or about 25 MiB additional space if the installed runtime and both models verify; these are not exact installed sizes. Retained partials can reduce the budget. Shared system dependencies use separate system-partition space and are not removed with the app.</p>
+      </section>
+
+      <section id="privacy" data-search-section>
+        <h2>Privacy boundaries</h2>
+        <p>Normal app operation has no external network dependency: model inference and speech processing happen on the handheld. The Python app talks over HTTP to its own llama.cpp server at <code>127.0.0.1:39227</code>. That is loopback communication, not a cloud endpoint. The server is launched in offline mode, bound to loopback, with its web UI disabled.</p>
+        <p>The installer is different: it contacts GitHub (including the API for local-code online update checks) and, when needed, Hugging Face. Automatic dependency setup may also contact configured APT repositories when capabilities are missing. Those services can see ordinary requests and connection metadata. Downloading a model is not uploading a chat. The website does not require an account or trackers, but following an external source link leaves this site.</p>
+        <div class="callout warning"><p><strong>Local is not encrypted.</strong> Settings and conversations are plain JSON on the card. Anyone with access to the card or a sufficiently privileged process can read them. There is no app-level password, encrypted vault, secure deletion or cloud backup.</p></div>
+        <p>Audio and diagnostics also have a local footprint. Capture uses <code>/tmp/project_227_mic.wav</code>; microphone testing uses <code>/tmp/project_227_mictest.wav</code>. Synthesis uses temporary WAV filenames based on <code>project_227_tts</code>. Normal cleanup removes some playback files, but the app does not promise that every recording or log is automatically erased, especially after an interrupted session.</p>
+        <p><code>/tmp/project_227_mic.log</code> can include a transcript excerpt, and <code>/tmp/project_ai_server.log</code> contains engine diagnostics. Manager/bootstrap/CLI logs remain in their own directory. Do not assume <code>/tmp</code> is persistent or automatically secure; its lifetime depends on the operating system. Review files and logs before sharing an SD image or bug report. Uninstall is ordinary file removal, not forensic erasure.</p>
+      </section>
+
+      <section id="licenses" data-search-section>
+        <h2>Licenses and credits</h2>
+        <p>Created and maintained by <strong>1Z99</strong>. The app and original background, logo and cover art are MIT licensed. Third-party code, models, fonts and system libraries retain their own terms. See the repository's <a href="https://github.com/1Z99/project-ai-r36s/blob/main/CREDITS.md">CREDITS.md</a> and <a href="https://github.com/1Z99/project-ai-r36s/tree/main/licenses">full license texts</a>.</p>
+        <p>Special thanks to <strong>southoz and the dArkOSRE-R36 contributors</strong> for <a href="https://github.com/southoz/dArkOSRE-R36">dArkOSRE-R36</a>, the firmware used on the R36S where 227 AI is developed and tested. The firmware is installed separately, not bundled with the app.</p>
+        <div class="table-wrap"><table><caption>Component licenses and distribution</caption><thead><tr><th scope="col">Component</th><th scope="col">License</th><th scope="col">How it is used</th></tr></thead><tbody>
+          <tr><th scope="row">227 AI application and original artwork</th><td><a href="https://github.com/1Z99/project-ai-r36s/blob/main/LICENSE">MIT</a></td><td>Project source and assets by 1Z99.</td></tr>
+          <tr><th scope="row"><a href="https://github.com/ggml-org/llama.cpp">llama.cpp</a></th><td><a href="https://github.com/1Z99/project-ai-r36s/blob/main/licenses/llama.cpp-MIT.txt">MIT</a></td><td>Bundled aarch64 inference server and libraries.</td></tr>
+          <tr><th scope="row"><a href="https://github.com/ggml-org/whisper.cpp">whisper.cpp</a> and distributed Whisper tiny.en model</th><td><a href="https://github.com/1Z99/project-ai-r36s/blob/main/licenses/whisper.cpp-MIT.txt">MIT</a></td><td>Bundled speech engine; model downloaded separately. Whisper originates with OpenAI; conversion/distribution is from ggml.org.</td></tr>
+          <tr><th scope="row">Liquid AI LFM 2.5 350M</th><td><a href="https://github.com/1Z99/project-ai-r36s/blob/main/licenses/LFM2.5-Open-License.txt">LFM Open License v1.0</a></td><td>Downloaded model, not MIT. Its terms include redistribution obligations and a commercial-use revenue threshold.</td></tr>
+          <tr><th scope="row"><a href="https://www.libsdl.org/">SDL2 / SDL2_ttf</a></th><td>zlib</td><td>Loaded from the device OS, not bundled with the app.</td></tr>
+          <tr><th scope="row"><a href="https://github.com/espeak-ng/espeak-ng">espeak-ng</a></th><td><a href="https://github.com/1Z99/project-ai-r36s/blob/main/licenses/espeak-ng-NOTICE.txt">GNU GPL v3.0 notice</a></td><td>System library used for synthesis; not bundled with 227 AI.</td></tr>
+          <tr><th scope="row"><a href="https://dejavu-fonts.github.io/">DejaVu fonts</a></th><td><a href="https://github.com/1Z99/project-ai-r36s/blob/main/licenses/DejaVu-fonts-copyright">Bitstream Vera / public-domain additions</a></td><td>Regular/bold SD-bundled fonts for manager and app fallback, also used by the optional PC preview. Existing license is included; no manual OS-font installation required.</td></tr>
+        </tbody></table></div>
+        <p>The LFM license's commercial-use provisions reference an annual revenue threshold of US $10 million. Read the actual license, including its precise threshold conditions, before commercial use or redistribution. This summary does not replace those terms or grant additional rights.</p>
+      </section>
+
+      <section id="limits" data-search-section>
+        <h2>Practical and hard limits</h2>
+        <div class="table-wrap"><table><caption>Current source limits</caption><thead><tr><th scope="col">Boundary</th><th scope="col">Limit</th></tr></thead><tbody>
+          <tr><th scope="row">Message draft</th><td>500 characters, including inserted dictation.</td></tr>
+          <tr><th scope="row">System prompt</th><td>2,000 characters; nonempty when applied.</td></tr>
+          <tr><th scope="row">Microphone recording</th><td>30 seconds per dictation; the test records about four seconds.</td></tr>
+          <tr><th scope="row">Read-aloud input</th><td>First 600 characters of the selected reply.</td></tr>
+          <tr><th scope="row">Saved chats</th><td>Up to 60 entries.</td></tr>
+          <tr><th scope="row">Recent history file</th><td>Up to the last 24 message entries before pending/transient entries are filtered, not 24 conversations.</td></tr>
+          <tr><th scope="row">Context / reply budget</th><td>768 / 160 tokens by default. Tokens are not words or characters.</td></tr>
+        </tbody></table></div>
+        <p>The request builder trims older messages using a roughly 2,100-character budget with per-message overhead, then prepends the system prompt. This is not token counting, and it is not a promise that a long prompt fits the configured token context. Keep custom instructions short and restate crucial details in a new question.</p>
+        <p>A 350-million-parameter model on this handheld is a constrained assistant, not a substitute for verified information. It can invent facts, make arithmetic errors, miss instructions and forget earlier context. There is no live web search or current-data feed. Do not rely on it for medical, legal, financial, emergency or other safety-critical decisions.</p>
+      </section>
+
+      <section id="known-pitfalls" data-search-section>
+        <h2>Known pitfalls</h2>
+        <ul>
+          <li><strong>Arithmetic is not a dependable built-in calculator.</strong> The current source has a broken expression-helper path; do not treat calculator-looking input as a verified computation feature.</li>
+          <li><strong>A profile is not a downloaded model.</strong> Qwen and Falcon appear only when their files exist; the standard install fetches LFM and English Whisper.</li>
+          <li><strong>A new SD destination is not a migration.</strong> It repoints the shared launcher registration without erasing the old copy.</li>
+          <li><strong>Repair is not manager self-update.</strong> Four deployed manager modules are cached separately from the app payload. A complete set is reused; updating the bootstrap and matching set is manual. If a module is absent, the new bootstrap refreshes all four rather than mixing versions.</li>
+          <li><strong>Up to date is a content check, not a guessed version.</strong> The local backend returns <code>up_to_date</code> only after managed source, actual model/runtime hashes, owned ES/theme metadata, executable permissions and config existence pass. It skips app writes, preserves ES statistics and ignores harmless XML rewrites. Missing/integrity failures trigger repair; differing existing payload bytes use <strong>Updated/repaired files</strong> because corruption and a new version cannot be reliably distinguished without a release baseline.</li>
+          <li><strong>Cache does not prove freshness.</strong> Online checks require internet even for a no-op; GitHub API/rate-limit and source-fetch failures cannot report up to date. Local source/bundle checks explicitly compare the local tree, not GitHub. See <a href="guide.html#updates">Updates and repair</a>.</li>
+          <li><strong>A saved chat is not unlimited model memory.</strong> A long archive can outlive the short context supplied for the next answer.</li>
+          <li><strong>Offline does not mean no local traces.</strong> JSON, recordings and logs deserve the same care as other private files.</li>
+        </ul>
+        <p>For installation failures and recovery steps, use <a href="guide.html#troubleshooting">Troubleshooting</a>. For the evidence behind support claims, see <a href="development.html#verification">Verification</a>.</p>
+      </section>
+      <nav class="doc-pagination" aria-label="Documentation pages"><a href="guide.html">Previous: Get started</a><a href="development.html">Next: Build notes</a></nav>
+    </article>
+  </main>
+  <footer class="site-footer"><div><a class="footer-brand" href="../../index.html">1Z99</a><p>R36S apps and experiments.</p></div><nav aria-label="227 AI links"><a href="guide.html">Install 227 AI</a><a href="reference.html#licenses">Licenses</a><a href="https://github.com/1Z99/project-ai-r36s">227 AI source</a></nav><p class="footer-note">227 AI: a little handheld. A local assistant. No cloud account.</p></footer>
+</body>
+</html>

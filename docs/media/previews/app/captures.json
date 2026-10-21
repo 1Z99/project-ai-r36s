@@ -1,0 +1,195 @@
+{
+  "origin": "pc-demo",
+  "productionRenderer": true,
+  "sampleReplies": true,
+  "simulatedMic": true,
+  "liveModel": false,
+  "microphoneAccess": false,
+  "deviceAccess": false,
+  "userPersistence": false,
+  "userConfigRead": false,
+  "userHistoryRead": false,
+  "networkAccess": false,
+  "hasAudio": false,
+  "audioPlayback": false,
+  "speechSynthesis": false,
+  "width": 640,
+  "height": 480,
+  "format": "PNG",
+  "lossless": true,
+  "pixelSource": "SDL_RenderReadPixels / RGBA32 / before present",
+  "renderer": "app/project_ai_r36s.py:draw_ui + project_ai_settings.SettingsPanel",
+  "fonts": [
+    {
+      "file": "DejaVuSansMono-Bold.ttf",
+      "size": 16
+    },
+    {
+      "file": "DejaVuSansMono.ttf",
+      "size": 14
+    },
+    {
+      "file": "DejaVuSansMono.ttf",
+      "size": 11
+    },
+    {
+      "file": "DejaVuSansMono-Bold.ttf",
+      "size": 15
+    }
+  ],
+  "model": "fast",
+  "highlightTiming": "synthetic-silent",
+  "limitations": "Scripted PC states, not device captures, live answers, recordings or benchmarks.",
+  "messages": [
+    {
+      "role": "user",
+      "content": "explain local AI"
+    },
+    {
+      "role": "assistant",
+      "content": "Local AI runs on your own device, not in the cloud. Your questions stay with you. This is a scripted sample reply."
+    },
+    {
+      "role": "user",
+      "content": "give me a packing tip"
+    },
+    {
+      "role": "assistant",
+      "content": "Pack a light rain jacket and a refillable water bottle. Check the forecast before you leave. Sample reply, not live AI."
+    }
+  ],
+  "history": [
+    {
+      "title": "explain local AI",
+      "updated": 1700000000,
+      "messages": [
+        {
+          "role": "user",
+          "content": "explain local AI"
+        },
+        {
+          "role": "assistant",
+          "content": "Local AI runs on your own device, not in the cloud. Your questions stay with you. This is a scripted sample reply."
+        }
+      ]
+    },
+    {
+      "title": "a weekend packing tip",
+      "updated": 1699996400,
+      "messages": [
+        {
+          "role": "user",
+          "content": "give me a packing tip"
+        },
+        {
+          "role": "assistant",
+          "content": "Pack a light rain jacket and a refillable water bottle. Check the forecast before you leave. Sample reply, not live AI."
+        }
+      ]
+    },
+    {
+      "title": "draft a short note",
+      "updated": 1699992800,
+      "messages": [
+        {
+          "role": "user",
+          "content": "draft a short note"
+        },
+        {
+          "role": "assistant",
+          "content": "See you at the park at noon. Sample note."
+        }
+      ]
+    }
+  ],
+  "systemPrompt": "You are 227, a private offline assistant.\nKeep replies short and useful.\nIf unsure, say so. Never invent facts.",
+  "generation": {
+    "context": 768,
+    "max_tokens": 160,
+    "temperature": 0.25
+  },
+  "captures": [
+    {
+      "id": "chat",
+      "file": "chat.png",
+      "description": "Two short scripted questions and complete sample replies.",
+      "bytes": 170406,
+      "sha256": "bb0b8b5ce0650fb20a6df9c6a60946c42ce7f3c91ecd6b7457286ace91d4d076"
+    },
+    {
+      "id": "keyboard",
+      "file": "keyboard.png",
+      "draft": "what should I pa",
+      "messages": [
+        {
+          "role": "user",
+          "content": "one packing tip?"
+        },
+        {
+          "role": "assistant",
+          "content": "Bring a rain jacket. Sample reply."
+        }
+      ],
+      "description": "Native compose keyboard, suggestions and explicit SEND.",
+      "bytes": 171621,
+      "sha256": "0178aa1ecf21aae9ba5c2f537d36329e778864c8a4e14c67bce0a3b262943b9c"
+    },
+    {
+      "id": "speech",
+      "file": "speech.png",
+      "highlight": "device,",
+      "description": "Silent read-aloud illustration with a synthetic word highlight.",
+      "bytes": 161879,
+      "sha256": "ef8e66a4707938ed3f12a4ab53f6aa75e328d3130334f11ae4241b2de935a9d1"
+    },
+    {
+      "id": "voice",
+      "file": "voice.png",
+      "page": "VOICE",
+      "description": "Native voice controls with an explicitly simulated mic test; no capture or playback.",
+      "bytes": 181287,
+      "sha256": "226c7d7f5fa3cfae88516341520ce1ab714a6a445c6c4bedc2aa02ffdd9409ef"
+    },
+    {
+      "id": "dictation",
+      "file": "dictation.png",
+      "draft": "suggest a short walk",
+      "messages": [
+        {
+          "role": "user",
+          "content": "one packing tip?"
+        },
+        {
+          "role": "assistant",
+          "content": "Bring a rain jacket. Sample reply."
+        }
+      ],
+      "description": "Sample dictated draft ready for review and explicit SEND; no microphone used.",
+      "bytes": 172142,
+      "sha256": "f4c6e91b255a22a20343dcae1d2deff62ecdd2a1ef76591266d3bef51aa54772"
+    },
+    {
+      "id": "history",
+      "file": "history.png",
+      "description": "Three in-memory sample conversations; no saved history is read.",
+      "bytes": 164444,
+      "sha256": "b41459f2e311e2ed05a8e774d3208a17a466c70133e29907b3d7fec4f4c1ba1d"
+    },
+    {
+      "id": "prompt",
+      "file": "prompt.png",
+      "page": "SYSTEM PROMPT",
+      "description": "Native system prompt editor with MIC, APPLY and CANCEL keys.",
+      "bytes": 172480,
+      "sha256": "b497eeed01c75252ec534f1a74e9ee5249729e9a948172c3b07ed51f93253d71"
+    },
+    {
+      "id": "settings",
+      "file": "settings.png",
+      "page": "GENERATION",
+      "description": "Actual context window, reply limit and temperature controls.",
+      "bytes": 178382,
+      "sha256": "9cc58b3cc106820860ffb89a6d94f44eec7c0755dba1713218aadb9fa2a81b36"
+    }
+  ]
+}

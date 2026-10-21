@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080d0b">
+  <title>Field Manual | 227 TV | 1Z99</title>
+  <meta name="description" content="227 TV controls tab by tab, the Start menu, globe quality settings, playback rendition caps, storage paths, privacy boundaries and third-party licenses.">
+  <link rel="icon" href="../../media/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../site.css">
+  <script src="../../site.js" defer></script>
+</head>
+<body data-project="227-tv" data-captures="projects/227-tv/screenshots.json">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <a class="brand workshop-brand" href="../../index.html" aria-label="1Z99 home"><span class="brand-number">1Z99</span><span class="brand-suffix">R36S<span>APPS &amp; EXPERIMENTS</span></span></a>
+    <nav class="main-nav" id="main-nav" aria-label="Main navigation"><a href="../../index.html#projects">Projects</a><a href="../../index.html#about">About</a><a href="../../index.html#device">My R36S</a></nav>
+    <div class="header-actions"><button type="button" class="search-trigger" data-search-open aria-label="Search site">Search <kbd>/</kbd></button><button type="button" class="menu-toggle" data-menu-toggle aria-controls="site-menu" aria-expanded="false">Menu</button></div>
+  </header>
+  <div class="project-context page-width">
+    <nav class="breadcrumb" aria-label="Breadcrumb"><ol><li><a href="../../index.html">1Z99</a></li><li><a href="../../index.html#projects">Projects</a></li><li><a href="index.html">227 TV</a></li><li><span aria-current="page">Field manual</span></li></ol></nav>
+    <nav class="project-nav" aria-label="227 TV navigation"><span class="project-nav-label">227 TV</span><a href="index.html">Overview</a><a href="guide.html">Install</a><a href="reference.html" aria-current="page">Manual</a><a href="development.html">Build notes</a><a href="gallery.html">Screenshots</a></nav>
+  </div>
+  <main id="main" class="docs-layout">
+    <aside class="docs-sidebar">
+      <span class="eyebrow">Field Manual</span>
+      <nav aria-label="On this page"><a href="#controls">Controls</a><a href="#tabs">The three tabs</a><a href="#search">Search</a><a href="#settings">Settings</a><a href="#downloads-and-caches">Downloads and caches</a><a href="#storage">Storage</a><a href="#privacy">Privacy</a><a href="#licenses">Licenses and credits</a><a href="#limits">Limits</a><a href="#known-pitfalls">Known pitfalls</a></nav>
+    </aside>
+    <article class="docs-article">
+      <div class="doc-heading">
+        <p class="eyebrow">227 TV / Field Manual</p>
+        <h1>Know your atlas.</h1>
+        <p class="lede">The controls, settings and boundaries of 227 TV: country-by-country browsing, fullscreen playback, an experimental four-view matrix, and saved files you can inspect and back up.</p>
+        <div class="doc-meta"><span>640 x 480 interface</span><span>Country-only loading</span><span>No cloud account</span></div>
+      </div>
+
+      <section id="controls" data-search-section>
+        <h2>Controls</h2>
+        <p>Read the current footer: buttons change meaning in search, menus and playback. These are user-facing actions on the tested R36S, not a universal controller mapping.</p>
+        <div class="table-wrap"><table><caption>Navigation and browsing</caption><thead><tr><th scope="col">Control</th><th scope="col">Action</th></tr></thead><tbody>
+          <tr><th scope="row">Left stick</th><td>Local AI mouse pointer with matched speed and deadzone; hold <kbd>A</kbd> over the globe and drag to rotate it.</td></tr>
+          <tr><th scope="row">A</th><td>Watch the selected station in list focus, choose the country at the crosshair in globe focus, or activate the pointer's target. Hold while moving the pointer over the globe to rotate it; release without dragging to pick a country.</td></tr>
+          <tr><th scope="row">D-pad</th><td>List Up/Down selects a row; Left/Right pages by eight rows. In globe focus it rotates the atlas; A then picks the country at the center.</td></tr>
+          <tr><th scope="row">Select</th><td>Toggle globe / list focus.</td></tr>
+          <tr><th scope="row">L1 / R1</th><td>Previous / next browsing tab.</td></tr>
+          <tr><th scope="row">L2 / R2</th><td>Zoom out / in while browsing.</td></tr>
+          <tr><th scope="row">X / Y</th><td>Open search / toggle the selected station's favorite status. These shortcuts are not active during playback.</td></tr>
+          <tr><th scope="row">Right stick vertically</th><td>Scroll the browsing list or a menu opened from browsing. It is not a playback-menu scroll control.</td></tr>
+          <tr><th scope="row">Start / FN</th><td>Open the menu.</td></tr>
+          <tr><th scope="row">L3 (left-stick click)</th><td>Play a random station from the currently filtered browsing list.</td></tr>
+          <tr><th scope="row">B</th><td>When browsing, clear country/search filters first; from an unfiltered World view, open the exit confirmation. In a menu, close it (quality returns to Settings).</td></tr>
+        </tbody></table></div>
+        <div class="table-wrap"><table><caption>Fullscreen playback and matrix</caption><thead><tr><th scope="col">Control</th><th scope="col">Action</th></tr></thead><tbody>
+          <tr><th scope="row">A</th><td>Pause/resume the single player or focused matrix player when using button navigation. With the pointer active in the matrix, A selects the cell under it instead; a click in single-channel video pauses/resumes.</td></tr>
+          <tr><th scope="row">D-pad / L1 / R1</th><td>In the matrix, move between the four cells / cycle backward or forward. Focus controls which cell is audible, not which stream is fullscreen. Empty cells can also receive focus.</td></tr>
+          <tr><th scope="row">L2 / R2</th><td>Lower / raise saved app volume by 5, clamped to 0-100. The value applies to all players; only the focused matrix cell is audible.</td></tr>
+          <tr><th scope="row">Start</th><td>Open Settings without stopping playback. Resolution / frame rate affects the focused cell.</td></tr>
+          <tr><th scope="row">R3 (right-stick click)</th><td>Pause/resume the focused player, including when the pointer is active.</td></tr>
+          <tr><th scope="row">B</th><td>With a menu open, dismiss it first. With no menu open, stop all players and return to browsing, closing their decoder/audio output and cancelling pending quality work.</td></tr>
+        </tbody></table></div>
+        <p><strong>Fullscreen is automatic.</strong> A station opens at 640 x 480; the watch header, footer and pointer hide after about 2.5 seconds without input. There is no separate fullscreen button or matrix-cell maximize action. Menus alone do not stop playback. <strong>Stop playback</strong>, <kbd>B</kbd> from the watch view, switching playback or exiting TV closes players; stale network results cannot restart a stopped session.</p>
+      </section>
+
+      <section id="tabs" data-search-section>
+        <h2>The three tabs</h2>
+        <div class="table-wrap"><table><caption>WORLD, FAVORITES and RECENT</caption><thead><tr><th scope="col">Tab</th><th scope="col">What it holds</th></tr></thead><tbody>
+          <tr><th scope="row">WORLD</th><td>The rotating atlas. Clicking a country starts an eased camera flight along the shortest longitude path, then pulls into close-up and reveals that country's channels with the Local AI Matrix glyph scramble, one row at a time. The selected country renders in amber with its channel-count numeral at the country's centroid.</td></tr>
+          <tr><th scope="row">FAVORITES</th><td>Stations you saved with <kbd>Y</kbd>. It opens from saved snapshots without downloading the world index.</td></tr>
+          <tr><th scope="row">RECENT</th><td>Up to 50 stations selected for single-channel playback, newest first, from saved snapshots. An unsuccessful tune can still be recorded; starting matrix slots does not add them here.</td></tr>
+        </tbody></table></div>
+        <p>There are three tabs, no Archive tab. World hides stations marked dead by the health checker; saved snapshots can still appear in Favorites/Recent. These tabs do not require a world-index download, but their streams still need network access. Switching tabs <strong>retains the country and search filters</strong>. To see saved stations from all countries, use <strong>Start &gt; World / clear filters</strong>, then switch to Favorites or Recent. Merely switching back to World does not clear a loaded country; the menu action does.</p>
+        <p>The channel panel has eight rows and truncates list names to 15 characters. The globe's numeral counts loaded country entries, not confirmed live stations or necessarily the number remaining after search/health filters.</p>
+        <h3>Build a watch matrix</h3>
+        <p>Select a station while browsing, then choose <strong>Start &gt; Add selected to matrix</strong>. Repeat for up to four slots, then choose <strong>Watch matrix</strong>. Slots are session-only, may contain duplicates, and are separate from favorites. <strong>Clear matrix</strong> clears the queued slots, not players already running; use Stop playback or B to stop those.</p>
+        <p>Use the D-pad or L1/R1 to move focus, or point at a cell and press A. Only that cell supplies audio; focusing an empty slot is silent. All populated cells keep decoding independently. There is no per-slot remove/replace or maximize command: clear the queue and rebuild it, or stop and select a station normally for fullscreen. Four-view mode is experimental and may be too demanding for a particular stream combination.</p>
+        <figure class="shot" data-shot="matrix"><div class="shot-placeholder"><span class="shot-code">227 TV / PC PLAYBACK CAPTURE</span><strong>Experimental four-cell watch view</strong><p>France 24 French, English, Arabic and Spanish feeds, decoded live.</p><span class="shot-aspect">640 x 480 / 4:3</span></div><figcaption>The focused cell has a bright green border. Four distinct France 24 language feeds play in this <a href="gallery.html#capture-plan">PC capture</a>; it is not a handheld performance test.</figcaption></figure>
+      </section>
+
+      <section id="search" data-search-section>
+        <h2>Search</h2>
+        <p>Press <kbd>X</kbd> for the Local AI bold keyboard with its cached green cursor. <kbd>A</kbd> types, <kbd>B</kbd> deletes and closes the keyboard when the draft is empty, <kbd>Y</kbd> inserts a space, and <kbd>X</kbd> applies the search. Explicit <strong>FIND</strong> and <strong>CLOSE</strong> keys are available in the action bar.</p>
+        <p><strong>Search is a local filter, not worldwide discovery.</strong> It matches all typed words, case-insensitively, against station name, country/code, language and tags in the current country list or saved Favorites/Recent snapshots. Available metadata varies by playlist; a language query cannot match missing language fields. The draft is limited to 80 characters. No search text is sent to a remote search service.</p>
+        <p>Choose countries with <strong>Start &gt; Browse countries</strong>, not the search keyboard. That picker works before any channels load. With an empty World list, search has nothing to match and does not fetch a catalog. CLEAR only empties the draft; press FIND or X to apply that empty filter. CLOSE discards draft edits. Opening a country resets the query and returns to World; late country responses cannot replace a newer selection.</p>
+        <figure class="shot" data-shot="search"><div class="shot-placeholder"><span class="shot-code">227 TV / PC PREVIEW</span><strong>The search keyboard</strong><p>Scripted france query over four authentic France 24 entries.</p><span class="shot-aspect">640 x 480 / 4:3</span></div><figcaption>FIND applies the draft; CLOSE leaves the field unchanged. This PC browser fixture searches the loaded France entries.</figcaption></figure>
+      </section>
+
+      <section id="settings" data-search-section>
+        <h2>Settings</h2>
+        <p><kbd>Start</kbd> opens a full-screen menu; d-pad Up/Down selects rows and Left/Right or <kbd>A</kbd> toggles values. The menu stays open while you adjust CRT or globe detail. While watching, <strong>Resolution / frame rate</strong> is the first row.</p>
+        <div class="table-wrap"><table><caption>Menu rows and their options</caption><thead><tr><th scope="col">Row</th><th scope="col">Options</th></tr></thead><tbody>
+          <tr><th scope="row">Resolution / frame rate</th><td>Available for the focused playing station. Auto prefers the highest advertised rendition at or below 480p for single-channel video, 240p in matrix. It is a preference, not a hard HD block. Other rows list real source formats, not invented FPS controls; no transcoding happens. Selection restarts that cell and is not a saved per-station quality preference.</td></tr>
+          <tr><th scope="row">Browse countries</th><td>Open the world list to frame a country directly.</td></tr>
+          <tr><th scope="row">World / clear filters</th><td>Clear the current country list and filters.</td></tr>
+          <tr><th scope="row">Random station</th><td>Play from the currently filtered rows, preferring stations not in Recent when possible. Does not download a worldwide catalog.</td></tr>
+          <tr><th scope="row">Add selected to matrix</th><td>Pin the selected station into one of the 2x2 matrix's four slots (n/4 shown).</td></tr>
+          <tr><th scope="row">Watch matrix / Clear matrix</th><td>Start the queued slots (requires at least one), replacing existing playback / clear the session's slot queue without stopping current playback.</td></tr>
+          <tr><th scope="row">Globe resolution</th><td>128, 160, 192, 224, 256, 320, 384, 448 or 512 px internal globe size. The choice persists; movement detail is capped at 224 px, and the default renders 160x160 while moving and 224x224 when stationary.</td></tr>
+          <tr><th scope="row">CRT overlay</th><td>Off / On phosphor overlay (default Off for clean playback).</td></tr>
+          <tr><th scope="row">CRT intensity</th><td>Normal / High effect.</td></tr>
+          <tr><th scope="row">CRT animation</th><td>Off / On drifting refresh band and flicker.</td></tr>
+          <tr><th scope="row">Earth rotation speed</th><td>Off / 0.5x / 1x (default) / 2x / 4x / 8x idle world-spin speed; the choice persists in the preferences file.</td></tr>
+          <tr><th scope="row">Recheck station health</th><td>Check up to 12 loaded country stations, oldest checks first, with up to four HTTP workers. This checks reachability and a nonempty response, not decoding, sound or sustained availability. Dead entries are hidden from World, not deleted from favorites/history.</td></tr>
+          <tr><th scope="row">Refresh selected country</th><td>Re-fetch the current country's playlist.</td></tr>
+          <tr><th scope="row">Stop playback / Exit TV</th><td>Stop audio/video without leaving, or open the full-screen <strong>LEAVE 227 TV?</strong> prompt (Keep watching / Exit to EmulationStation); your favorites and preferences stay saved.</td></tr>
+        </tbody></table></div>
+        <p>Defaults in <code>state.json</code> are <strong>volume 70</strong>, CRT overlay Off, Normal intensity, CRT animation Off, <strong>1x (2.4 deg/s)</strong> world spin and 224 px stationary globe resolution. Accepted settings save immediately. Idle spin is limited to world browsing: it pauses for globe hover/manual movement, menus, flights, country/close-up views and inactive desktop focus. List navigation or pointer motion away from the globe does not by itself stop rotation.</p>
+        <figure class="shot" data-shot="quality"><div class="shot-placeholder"><strong>Resolution / frame rate</strong><p>France 24 source formats in the production quality menu.</p></div><figcaption>Auto and broadcaster source formats, with France 24 French playback continuing behind the opaque menu. PC capture; no on-device transcoding.</figcaption></figure>
+      </section>
+
+      <section id="downloads-and-caches" data-search-section>
+        <h2>Downloads and caches</h2>
+        <p><strong>Country-only loading.</strong> Normal startup reads bundled geography, saved state and health records; it does not load the old global <code>catalog.json</code> or fetch channel/stream/feed indexes. Opening a country uses <code>https://iptv-org.github.io/iptv/countries/&lt;code&gt;.m3u</code>, parsed into <code>countries/&lt;CODE&gt;.json</code> in the data root. A cache younger than 24 hours is reused. After expiry, or on Refresh selected country, TV attempts a new fetch; a failed fetch can fall back to the existing cache regardless of age. A first-time 404 produces an empty country cache.</p>
+        <p>Channel selection checks HLS renditions and listed alternatives in the background, preferring a source within the handheld quality target before decoding. Where needed, a private one-rendition master retains separate audio/subtitle groups and is removed when the player closes. Quality changes affect only the focused cell and never saved favorites/history. Unknown dimensions are checked once decoding begins; HD-only streams can still play with a warning and may be slow. This is source selection, not a guarantee that a source under the target exists.</p>
+        <p>The backend also retains a global-index refresh API using iptv-org channel/stream/feed data, with a master-playlist fallback, but normal country browsing does not call it. The previously recorded 13,498 station/feed entries were a historical global-index observation, <strong>not</strong> today's shipped channel total. Country playlists change and may have limited metadata, duplicates/alternative sources, dead URLs or regional restrictions. Availability depends on the broadcaster.</p>
+      </section>
+
+      <section id="storage" data-search-section>
+        <h2>Storage map</h2>
+        <p>Here <code>$C</code> is the selected app card, <code>$T</code> the bootstrap's Tools card (each <code>/roms</code> or <code>/roms2</code>), and <code>$H</code> the launching user's home. They are explanatory symbols, not variables you need to set. The two cards can differ.</p>
+        <div class="table-wrap"><table><caption>Files and ownership</caption><thead><tr><th scope="col">Path</th><th scope="col">Purpose</th></tr></thead><tbody>
+          <tr><th scope="row"><code>$C/tools/melkor227-tv/</code></th><td>Managed program modules, <code>assets/</code>, optional globe helper/source, private <code>runtime/</code> with manifest/licenses/corresponding sources, and release documentation. <code>installed-release.json</code> records the installed release for Repair. Not the preferences directory, even in a source checkout by default.</td></tr>
+          <tr><th scope="row"><code>$H/.local/share/melkor227-tv</code></th><td>State root (<code>TV227_DATA</code> overrides it): catalog cache, favorites, recent history, preferences, <code>app.log</code> and <code>app.lock</code>. The launcher appends to the log and uses <code>flock</code> to reject duplicate launches for that data directory; the installer never copies, replaces or deletes saved state.</td></tr>
+          <tr><th scope="row"><code>state.json</code>, <code>health.json</code>, <code>countries/*.json</code></th><td>Under the data root: favorites, up to 50 recent station snapshots and preferences / reachability records / parsed per-country caches. Legacy <code>catalog.json</code> can remain but is not loaded at normal startup. Matrix slots and query are not persisted.</td></tr>
+          <tr><th scope="row"><code>$C/227ai/Melkor 227 TV.sh</code></th><td>Default main launcher; an existing shared 227 registration can use another direct child of the selected card. <code>$C/tools/Melkor 227 TV.sh</code> is the app's Tools fallback. Current artwork is <code>images/melkor227.jpg</code>, the unchanged AI cover JPEG, not the old SVG.</td></tr>
+          <tr><th scope="row"><code>$H/.local/state/melkor227-tv/installer.log</code></th><td>Graphical installer events.</td></tr>
+          <tr><th scope="row"><code>$T/tools/Install 227 TV.sh</code><br><code>$T/tools/227-tv-manager/</code></th><td>Maintenance bootstrap and extracted manager support files, distinct from the Tools app launcher. Bootstrap-verified manager archives live in <code>$T/tools/.227-tv-downloads/</code>; a local offline application may be copied there too. The selected app card's <code>$C/tools/227-tv-manager/cache/</code> holds verified application downloads and source-keyed partials.</td></tr>
+          <tr><th scope="row"><code>$H/.local/state/melkor227-tv/bootstrap.log</code></th><td>Early bootstrap/pre-display errors; <code>XDG_STATE_HOME</code> overrides this bootstrap log's parent. The graphical manager's installer log uses the home path above.</td></tr>
+          <tr><th scope="row">EmulationStation XML files</th><td>The shared 227 system and gamelist entries; every change receives a timestamped backup beside the original file.</td></tr>
+        </tbody></table></div>
+        <p>The default state root is shared by both card installs for the same user. <code>TV227_DATA</code> overrides it; the Python app also accepts <code>--data-dir</code>, but the launcher's lock/log follow <code>TV227_DATA</code>. Prefer that environment override consistently for maintenance and launch, and keep it outside the managed program tree. Close TV before backing up at least <code>state.json</code>, or the whole data root for caches/health. Invalid saved JSON raises an error rather than being silently overwritten with defaults. See <a href="guide.html#update-remove">Update and remove</a> for retained state.</p>
+      </section>
+
+      <section id="privacy" data-search-section>
+        <h2>Privacy boundaries</h2>
+        <p>The app has no account, project-hosted playback proxy or telemetry service. Country-list requests go to iptv-org's GitHub Pages host over HTTPS. Selecting a station can contact broadcaster/CDN alternatives and HLS playlists before a picture appears; decoding then fetches media, and manual health rechecking also makes HTTP requests. Those hosts see your IP address and normal connection metadata. Streams and their redirects may use <strong>HTTP as well as HTTPS</strong>; catalog HTTPS does not make every broadcast encrypted or trusted.</p>
+        <p>Installation/update discovery separately contacts GitHub's release endpoint and asset hosts. Missing dependencies may contact configured APT repositories; a runtime rebuild also has its own source/package downloads. Release archive verification does not authenticate a third-party channel or promise its safety or availability.</p>
+        <p>Search is local filtering and sends no query to a search service. Favorites, recent choices and preferences are unencrypted local JSON; they are not uploaded by TV, but can identify what you watched. There is no app-level password, encrypted vault, remote wipe or cloud backup. Anyone with access to the data root or backup can read them.</p>
+        <p><code>app.log</code> and <code>installer.log</code> can contain stream errors, URLs and system paths. Review them before sharing logs or an SD image. Local is not encrypted.</p>
+      </section>
+
+      <section id="licenses" data-search-section>
+        <h2>Licenses and credits</h2>
+        <p>Maintained by <strong>1Z99</strong>, adapting the Melkor 227 desktop atlas and retaining <strong>Akshar Patel's</strong> upstream MIT notice in <code>LICENSE</code>. 227 AI-derived code and original intro, logo, background and ASCII cat cover retain 1Z99's MIT notice in <code>assets/AI-LICENSE</code>. The source is at <a href="https://github.com/1Z99/r36s-tv">github.com/1Z99/r36s-tv &#8599;</a>; see its <a href="https://github.com/1Z99/r36s-tv/blob/main/CREDITS.md">full credits</a>. <strong>The full download is not MIT-only:</strong> the GPL-enabled playback runtime and fonts have separate terms.</p>
+        <div class="table-wrap"><table><caption>Component licenses and distribution</caption><thead><tr><th scope="col">Component</th><th scope="col">License</th><th scope="col">How it is used</th></tr></thead><tbody>
+          <tr><th scope="row">227 TV application and source files</th><td>Bundled <code>LICENSE</code> and <code>assets/AI-LICENSE</code> (MIT)</td><td>Handheld adaptation by 1Z99, retaining upstream attribution.</td></tr>
+          <tr><th scope="row">Intro, logo and background assets</th><td><code>assets/AI-LICENSE</code> (MIT)</td><td>19-frame intro, centered 227 logo trace and backdrop.</td></tr>
+          <tr><th scope="row"><a href="https://dejavu-fonts.github.io/">DejaVu fonts</a></th><td><code>assets/FONT-LICENSE</code> (Bitstream Vera / public-domain additions)</td><td>Bundled interface fonts; the existing license file ships beside them.</td></tr>
+          <tr><th scope="row"><a href="https://www.naturalearthdata.com/">Natural Earth</a> 1:110m Admin 0 Countries map data</th><td><a href="https://naturalearthdata.com/public-domain/">Public domain</a> (recorded in <code>assets/NOTICE.md</code>)</td><td>The <code>globe.json</code>/<code>countries.json</code> geography behind the atlas.</td></tr>
+          <tr><th scope="row"><a href="https://github.com/iptv-org/iptv">iptv-org</a> country playlists and retained global-index API</th><td>Upstream listing terms; broadcasters retain content rights</td><td>Downloaded listings, not bundled broadcasts or permission to redistribute them.</td></tr>
+          <tr><th scope="row">mpv / libmpv 0.40.0 runtime</th><td>GPL-enabled build; exact GPL/LGPL and Debian notices ship in <code>runtime/licenses/</code></td><td>Private software-rendering engine, <code>0.40.0-3+deb13u1+tv227sw1</code>, with corresponding source/build materials in <code>runtime/sources/</code>; not the unmodified Debian binary.</td></tr>
+          <tr><th scope="row">SDL2 / SDL2_ttf, FFmpeg, ALSA, <code>flock</code> (util-linux)</th><td>Firmware's own terms</td><td>Loaded from the device OS, never bundled or replaced.</td></tr>
+          <tr><th scope="row"><a href="https://github.com/southoz/dArkOSRE-R36">dArkOSRE-R36</a></th><td>The firmware's terms</td><td>The tested handheld firmware, installed separately.</td></tr>
+        </tbody></table></div>
+        <p>This summary does not replace the actual notices. The application bundle includes the runtime's Debian copyright and changelog files, upstream licenses, referenced common license texts, both corresponding source archives and the build recipe. Read them before redistributing.</p>
+        <p>Thanks to <strong>southoz and the dArkOSRE-R36 contributors</strong> for the separately installed firmware used in development. No broadcast content is bundled with the application. A public playlist URL does not grant rebroadcast rights or permission to bypass geographic restrictions; use streams only where authorized.</p>
+        <p>Website playback screenshots include France 24 broadcast frames. Broadcast images and station marks belong to France Medias Monde and the respective rights holders, not the site's MIT license; no endorsement is implied. See the <a href="gallery.html#capture-plan">gallery's broadcast credits and capture notes</a>.</p>
+      </section>
+
+      <section id="limits" data-search-section>
+        <h2>Practical and hard limits</h2>
+        <div class="table-wrap"><table><caption>Current source limits</caption><thead><tr><th scope="col">Boundary</th><th scope="col">Limit</th></tr></thead><tbody>
+          <tr><th scope="row">Watch matrix</th><td>Up to four independent players in a 2x2 layout, with 298 x 218 render surfaces and one audible focus. Auto prefers up to 240p sources; higher-only sources can still decode. Smaller output surfaces do not remove source decoding cost.</td></tr>
+          <tr><th scope="row">Station recheck</th><td>Batched per menu invocation (12 stations per scan step).</td></tr>
+          <tr><th scope="row">Country list</th><td>Eight visible 42-pixel rows; 15-character list names with full names in playback settings.</td></tr>
+          <tr><th scope="row">Quality cap</th><td>Auto prefers the highest rendition at or below 480 p (240 p in matrix); HD-only sources are not blocked, only warned about.</td></tr>
+          <tr><th scope="row">Country cache</th><td>Parsed JSON per country, 24-hour freshness; older data may be reused after fetch failure. Country downloads are limited to 8 MiB; the old global catalog is not used at startup.</td></tr>
+          <tr><th scope="row">Search / history</th><td>80-character search draft; up to 50 distinct recent station snapshots, most recent first. Recent records selection, not proof that decoding succeeded.</td></tr>
+          <tr><th scope="row">Device test</th><td><code>--device-test --run-seconds N</code> is bounded to <code>0 &lt; N &#8804; 60</code>.</td></tr>
+        </tbody></table></div>
+        <p>Owner-verified decoder numbers exist for one handheld: four simultaneous 320x180 test decoders at about 14 frames/s each, including an audio-focus handoff. That was a decoder probe, not a four-station live-stream or matrix-display benchmark, and it is not a speed promise for any network stream.</p>
+      </section>
+
+      <section id="known-pitfalls" data-search-section>
+        <h2>Known pitfalls</h2>
+        <ul>
+          <li><strong>Matrix mode is experimental.</strong> Treat four-station watching as a probe, not a settled feature.</li>
+          <li><strong>HD-only streams are slow.</strong> The warning-and-continue path is intentional; scaling cannot make every HD source smooth on this hardware.</li>
+          <li><strong>Offline browsing is not offline television.</strong> Saved favorites/recent and cached country lists can be viewed offline. New lists and live media need a network; demo scenes never tune their sample stations.</li>
+          <li><strong>Signal unavailable means just that.</strong> The catalog indexes stations that may be dark; availability is the broadcaster's, not the app's.</li>
+          <li><strong>Never launch TV in parallel with the menu.</strong> KMSDRM is not a desktop compositor; a background <code>nohup</code> launch races EmulationStation for rendering and input. The app refuses unowned launches, but two ES sessions or background processes can still collide.</li>
+          <li><strong>The station list is a snapshot.</strong> Country playlists refresh on a 24-hour country cache or manual Refresh; freshly open stations can be missing and dark ones can linger.</li>
+        </ul>
+        <p>For install failures use <a href="guide.html#troubleshooting">Troubleshooting</a>; for the evidence behind the hardware claims, see <a href="development.html#verification">Verification</a>.</p>
+      </section>
+      <nav class="doc-pagination" aria-label="Documentation pages"><a href="guide.html">Previous: Get started</a><a href="development.html">Next: Build notes</a></nav>
+    </article>
+  </main>
+  <footer class="site-footer"><div><a class="footer-brand" href="../../index.html">1Z99</a><p>R36S apps and experiments.</p></div><nav aria-label="227 TV links"><a href="guide.html">Install 227 TV</a><a href="reference.html#licenses">Licenses</a><a href="https://github.com/1Z99/r36s-tv">227 TV source</a><a href="https://github.com/1Z99/project-ai-r36s">227 AI source</a></nav><p class="footer-note">227 TV: a little handheld. A globe. Live channels.</p></footer>
+</body>
+</html>

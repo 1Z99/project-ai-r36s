@@ -1,0 +1,69 @@
+{
+  "world": {
+    "src": "media/227-tv/world.png",
+    "alt": "PC browser fixture: 227 TV green world globe with France selected and four authentic France 24 language feeds in the loaded list",
+    "kind": "screenshot",
+    "origin": "pc-demo",
+    "method": "native-render"
+  },
+  "installer": {
+    "src": "media/227-tv/installer.png",
+    "alt": "PC demo: Install 227 TV 1.0.4 with sample SD1 selected and Install, Update, Repair and Uninstall TV; nothing installed",
+    "kind": "screenshot",
+    "origin": "pc-demo",
+    "method": "native-render"
+  },
+  "search": {
+    "src": "media/227-tv/search.png",
+    "alt": "PC browser fixture: 227 TV country-scoped search keyboard with france typed into the draft, filtering four France 24 entries; no remote search",
+    "kind": "screenshot",
+    "origin": "pc-demo",
+    "method": "native-render"
+  },
+  "matrix": {
+    "realPlayback": true,
+    "src": "media/227-tv/matrix.png",
+    "alt": "PC playback capture: four experimental matrix cells showing decoded France 24 French, English, Arabic and Spanish feeds, with a green border around the focused cell",
+    "kind": "screenshot",
+    "origin": "pc-demo",
+    "method": "native-render"
+  },
+  "country": {
+    "src": "media/227-tv/country.png",
+    "alt": "PC browser fixture: country-focused France atlas with four authentic France 24 language feeds and a loaded-entry count",
+    "kind": "screenshot",
+    "origin": "pc-demo",
+    "method": "native-render"
+  },
+  "watch": {
+    "realPlayback": true,
+    "src": "media/227-tv/watch.png",
+    "alt": "PC playback capture: fullscreen France 24 French broadcast decoded in 227 TV, with the native watch controls visible",
+    "kind": "screenshot",
+    "origin": "pc-demo",
+    "method": "native-render"
+  },
+  "settings": {
+    "realPlayback": true,
+    "src": "media/227-tv/settings.png",
+    "alt": "PC capture: 227 TV Start menu with playback quality, country browsing, matrix actions and globe settings; France 24 French continues behind the opaque menu, preferences not saved",
+    "kind": "screenshot",
+    "origin": "pc-demo",
+    "method": "native-render"
+  },
+  "quality": {
+    "realPlayback": true,
+    "src": "media/227-tv/quality.png",
+    "alt": "PC capture: resolution menu with Auto up to 480p and France 24 source formats; real France 24 French playback continues behind the opaque menu",
+    "kind": "screenshot",
+    "origin": "pc-demo",
+    "method": "native-render"
+  },
+  "confirm": {
+    "src": "media/227-tv/confirm.png",
+    "alt": "PC demo: TV installation confirmation for a sample SD1 at /roms, with No / Back selected; no installation executed",
+    "kind": "screenshot",
+    "origin": "pc-demo",
+    "method": "native-render"
+  }
+}

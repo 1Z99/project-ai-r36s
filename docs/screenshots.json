@@ -1,0 +1,86 @@
+{
+  "installer": {
+    "src": "media/previews/installer/home.png",
+    "alt": "PC demo: installer with Main SD selected and Install, Update / Repair and Uninstall actions",
+    "kind": "screenshot",
+    "origin": "pc-demo",
+    "method": "native-render"
+  },
+  "confirm": {
+    "src": "media/previews/installer/confirm.png",
+    "alt": "PC demo: installer confirmation for the simulated main card, with Yes highlighted but not executed",
+    "kind": "screenshot",
+    "origin": "pc-demo",
+    "method": "native-render"
+  },
+  "download": {
+    "src": "media/previews/installer/download.png",
+    "alt": "PC demo: simulated model download at 50 percent with illustrative speed and ETA; no network or card access",
+    "kind": "screenshot",
+    "origin": "pc-demo",
+    "method": "native-render"
+  },
+  "success": {
+    "src": "media/previews/installer/success.png",
+    "alt": "PC demo: simulated installer success with PC demo named as the source; no files installed",
+    "kind": "screenshot",
+    "origin": "pc-demo",
+    "method": "native-render"
+  },
+  "chat": {
+    "src": "media/previews/app/chat.png",
+    "alt": "PC demo: two short questions with complete scripted sample replies in the native chat interface",
+    "kind": "screenshot",
+    "origin": "pc-demo",
+    "method": "native-render"
+  },
+  "keyboard": {
+    "src": "media/previews/app/keyboard.png",
+    "alt": "PC demo: on-screen keyboard with a short draft, word suggestions, MIC and selected SEND key",
+    "kind": "screenshot",
+    "origin": "pc-demo",
+    "method": "native-render"
+  },
+  "speech": {
+    "src": "media/previews/app/speech.png",
+    "alt": "PC demo: scripted reply with a synthetic word highlight illustrating read-aloud; no audio playback",
+    "kind": "screenshot",
+    "origin": "pc-demo",
+    "method": "native-render"
+  },
+  "voice": {
+    "src": "media/previews/app/voice.png",
+    "alt": "PC demo: VOICE settings with simulated USB microphone test labeled SIMULATED / NO CAPTURE",
+    "kind": "screenshot",
+    "origin": "pc-demo",
+    "method": "native-render"
+  },
+  "dictation": {
+    "src": "media/previews/app/dictation.png",
+    "alt": "PC demo: sample dictated draft ready to review before SEND; no microphone used",
+    "kind": "screenshot",
+    "origin": "pc-demo",
+    "method": "native-render"
+  },
+  "history": {
+    "src": "media/previews/app/history.png",
+    "alt": "PC demo: history panel with three in-memory sample conversations, without reading saved chats",
+    "kind": "screenshot",
+    "origin": "pc-demo",
+    "method": "native-render"
+  },
+  "prompt": {
+    "src": "media/previews/app/prompt.png",
+    "alt": "PC demo: complete system prompt editor with MIC, APPLY and CANCEL actions; changes affect memory only",
+    "kind": "screenshot",
+    "origin": "pc-demo",
+    "method": "native-render"
+  },
+  "settings": {
+    "src": "media/previews/app/settings.png",
+    "alt": "PC demo: generation settings with 768-token context, 160-token reply limit and 0.25 temperature; not saved",
+    "kind": "screenshot",
+    "origin": "pc-demo",
+    "method": "native-render"
+  }
+}

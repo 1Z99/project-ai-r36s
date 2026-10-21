@@ -1,12 +1,12 @@
 # Publishing 227 AI
 
 Maintainer notes for updating the existing repository and release assets.
+Website-only publication is a [separate process](#website-only-publication);
+it does not require installer release uploads, asset replacement or new tags.
 
-The automatic dependency setup and content-based update results are published:
-the canonical `install227ai.sh` release asset was refreshed to include them, and
-the bootstrap fetches the matching `installer_deps.py` from `main`. The
-bootstrap and manager still report version **1.2.0**; do not describe these
-changes as a shipped 1.3 release unless the version constant is bumped.
+The bootstrap and manager report version **1.2.0**; do not describe dependency
+setup or content-based update results as a shipped 1.3 release unless the version
+constant is bumped.
 
 ## 1. Use the existing release
 
@@ -33,9 +33,13 @@ cached managers and app Update / Repair do not fetch a newer bootstrap.
 The bootstrap fetches all four modules: `installer_core.py`,
 `installer_ui.py`, `installer_cli.py` and `installer_deps.py`, from
 `https://raw.githubusercontent.com/1Z99/project-ai-r36s/main/installer/...`.
-If any stored module is absent, it refreshes the entire matching set; a complete
-set remains cached, without automatic manager updates. Keep bootstrap and all
-four modules aligned when manually updating an existing manager.
+If any stored module is absent, it fetches all four sequentially from mutable
+`main`. These fetches are not pinned to one immutable revision and do not
+guarantee a matching or atomic module set if the branch changes between requests.
+A complete stored set remains cached, without automatic manager updates. Keep
+bootstrap and all four modules aligned when manually updating an existing manager.
+The bootstrap and manager sources are trusted executable code fetched over HTTPS,
+not independently authenticated by an immutable release tag or content signature.
 
 For default online app install/update, the core resolves `main` via the GitHub
 commits API and fetches app/assets/licenses/system files from the resulting
@@ -61,7 +65,7 @@ gh release upload v1.0.0 install227ai.sh --clobber --repo 1Z99/project-ai-r36s
 `gh` must already be authenticated. `--clobber` replaces an asset with the same
 name; review the file before uploading. Keep the release description and user
 instructions aligned with `install227ai.sh` and its current-code behavior.
-Publish the matching helper and source changes before refreshing the asset, so
+Publish the required helper and source changes before refreshing the asset, so
 the new bootstrap can fetch all four modules and bundled fonts/license. App
 Update / Repair is not a manager updater, even after this publication.
 
@@ -168,3 +172,102 @@ Use `--dry-run` instead of `--yes` for read-only card discovery/validation.
 The bootstrap uses the local checkout's installer modules without downloading
 them. A local runtime requires its pinned `.sha256` sidecar; include the model
 files at the source root to avoid network downloads.
+
+## Website-Only Publication
+
+The site is plain static content in `docs/`; no website deployment workflow is
+needed. Keep this process separate from the installer-release steps above:
+do not run `gh release upload`, clobber release assets, create tags or replace
+runtime/model files for a website-only change.
+
+### Review Scope
+
+Review the exact file list and diff before staging, committing or pushing. The
+website scope is `docs/` public HTML/CSS/JS, manifests, search index, `.nojekyll`,
+the exact `LICENSE.txt` copy of `LICENSE`, and approved media. Retain the twelve
+AI captures, nine TV captures and their metadata, both MP4s, VTT and walkthrough
+metadata.
+Remove retired video-frame PNGs, the separate old homepage poster and empty media
+placeholders rather than deploying them. Maintainer notes belong in
+[SITE_MAINTENANCE.md](SITE_MAINTENANCE.md) and [dev/WEB_MEDIA.md](dev/WEB_MEDIA.md),
+not under `docs/`.
+
+Review supporting changes individually: `PUBLISHING.md`, `tools/preview_site.py`,
+`tools/build_site_index.py`, `tools/test_site.mjs`, the four retained generators
+`dev/render_installer_demo.py`, `dev/render_app_captures.py`,
+`dev/render_web_walkthrough.py` and `dev/render_tv_captures.py`, deletion of the
+retired frame-extraction helper, and `tests/test_website.py`,
+`tests/test_site_preview.py`, `tests/test_installer_demo.py`,
+`tests/test_app_captures.py`, `tests/test_web_walkthrough.py` and
+`tests/test_tv_captures.py`. Do not stage unrelated application, installer,
+binary, model, device-log, personal-data or workstation changes. Avoid blanket
+`git add .`; approve an explicit file list.
+
+Preserve the personal 1Z99 root and nested `projects/227-ai/` hierarchy. Shared
+assets, search and capture resources resolve from `site.js` so repository subpaths
+work; do not introduce leading-slash asset URLs. No compatibility redirects are
+needed for old flat project URLs from the unpublished layout. Preserve the
+public license, provenance links, third-party terms and southoz credit.
+
+### Validate Locally
+
+Run from the repository root after coordinating the review/test pass:
+
+```sh
+python3 tools/build_site_index.py
+python3 tools/build_site_index.py --check
+python3 -m unittest discover -s tests -p 'test_website.py' -v
+python3 -m unittest discover -s tests -p 'test_site_preview.py' -v
+python3 -m unittest discover -s tests -q
+python3 tools/preview_site.py
+```
+
+The last command starts the loopback preview at `http://127.0.0.1:2270/`; stop
+it with Ctrl+C after review. With it running, use a second terminal for optional
+browser checks with separately installed Playwright and Chromium:
+
+```sh
+PLAYWRIGHT_MODULE=/path/to/node_modules/playwright/index.mjs \
+CHROMIUM_EXECUTABLE=/path/to/chromium \
+node tools/test_site.mjs
+```
+
+Review desktop/mobile layout, keyboard navigation, local search, all twenty-one
+gallery images, license/credit links, muted walkthrough playback, optional sound,
+captions, seeking, reduced motion and no-JavaScript fallback. Verify a
+repository-subpath preview as well as the root preview. Local tests do not prove
+the eventual host's MIME types or byte-range behavior.
+
+### Approve And Deploy
+
+Only after explicit maintainer approval of the preview and reviewed file scope,
+commit and push the approved changes to `main`. Then configure GitHub Pages to
+**Deploy from a branch**, selecting **main** and **/docs**, if that source is not
+already selected. Keep `.nojekyll`; do not add a website workflow. Do not change
+Pages settings or push as part of preparation alone.
+
+### Check The Actual Host
+
+After deployment, validate the actual Pages URL, including its repository path,
+not just the local server. For example, set `SITE_URL` to the approved deployed
+root and inspect response headers:
+
+```sh
+SITE_URL=https://1z99.github.io/project-ai-r36s
+curl -fsSI "$SITE_URL/"
+curl -fsSI "$SITE_URL/media/previews/app/chat.png"
+curl -fsSI "$SITE_URL/media/previews/227-ai-walkthrough.vtt"
+curl -fsSI "$SITE_URL/media/previews/227-ai-walkthrough.mp4"
+curl -fsS -D - -o /dev/null -H 'Range: bytes=0-1023' \
+  "$SITE_URL/media/previews/227-ai-walkthrough.mp4"
+curl -fsS -D - -o /dev/null -H 'Range: bytes=0-1023' \
+  "$SITE_URL/media/previews/installer/installer-demo.mp4"
+```
+
+Expect appropriate `Content-Type` values (`text/html`, `image/png`, `text/vtt`,
+`video/mp4`); check CSS, JavaScript and JSON types too. Both range GETs must
+return `206 Partial Content`, a correct `Content-Range` and the requested bytes;
+an `Accept-Ranges` header alone is not proof. Open the deployed nested pages and
+verify search destinations, capture loading, license/footer links, both videos,
+walkthrough captions and seeking in a real browser. Resolve hosting failures
+before treating publication as verified.
